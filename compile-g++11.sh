@@ -25,4 +25,4 @@ do
     files="$files $i"
 done
 
-g++ -std=c++11 -static -fno-optimize-sibling-calls -fno-strict-aliasing -DONLINE_JUDGE -D_LINUX -lm -s -x c++ -O2 -Wall -o $name $files 2>compilation.log
+g++ -std=c++11 -static -fno-optimize-sibling-calls -fno-strict-aliasing -DONLINE_JUDGE -D_LINUX -DSLAVA_DEBUG -lm -s -x c++ -O2 -Wall -o $name $files 2>compilation.log
