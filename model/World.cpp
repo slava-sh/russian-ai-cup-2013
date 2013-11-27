@@ -12,7 +12,7 @@ World::World(int moveIndex, int width, int height, vector<Player> players,
              const vector<vector<CellType> >& cells,
              const vector<bool>& cellVisibilities)
              : moveIndex(moveIndex), width(width), height(height), players(players),
-             troopers(troopers), bonuses(bonuses), cells(cells), cellVisibilities(cellVisibilities) { }
+             troopers(troopers), bonuses(bonuses), cells(&cells), cellVisibilities(&cellVisibilities) { }
 
 int World::getMoveIndex() const {
     return moveIndex;
@@ -39,7 +39,11 @@ const vector<Bonus>& World::getBonuses() const {
 }
 
 const vector<vector<CellType> >& World::getCells() const {
-    return cells;
+    return *cells;
+}
+
+const vector<bool>& World::getCellVisibilities() const {
+    return *cellVisibilities;
 }
 
 bool World::isVisible(double maxRange,
@@ -50,7 +54,7 @@ bool World::isVisible(double maxRange,
     int yRange = objectY - viewerY;
     
     return xRange * xRange + yRange * yRange <= maxRange * maxRange
-        && cellVisibilities[
+        && (*cellVisibilities)[
             viewerX * height * width * height * _TROOPER_STANCE_COUNT_
                 + viewerY * width * height * _TROOPER_STANCE_COUNT_
                 + objectX * height * _TROOPER_STANCE_COUNT_

@@ -45,7 +45,7 @@ private:
     signed char readEnum();
     void writeEnum(signed char value);
     std::string readString();
-    void writeString(std::string value);
+    void writeString(const std::string& value);
     bool readBoolean();
     void writeBoolean(bool value);
     int readInt();
@@ -55,19 +55,19 @@ private:
     double readDouble();
     void writeDouble(double value);
     std::vector<signed char> readBytes(unsigned int byteCount);
-    void writeBytes(std::vector<signed char> bytes);
+    void writeBytes(const std::vector<signed char>& bytes);
 
     static bool isLittleEndianMachine();
 public:
     RemoteProcessClient(std::string host, int port);
     ~RemoteProcessClient();
 
-    void writeToken(std::string token);
+    void writeToken(const std::string& token);
     int readTeamSize();
     void writeProtocolVersion();
     model::Game readGameContext();
     model::PlayerContext* readPlayerContext();
-    void writeMove(model::Move move);
+    void writeMove(const model::Move& move);
 
     void close();
 };

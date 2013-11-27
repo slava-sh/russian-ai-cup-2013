@@ -26,8 +26,8 @@ namespace model {
         std::vector<Player> players;
         std::vector<Trooper> troopers;
         std::vector<Bonus> bonuses;
-        const std::vector<std::vector<CellType> >& cells;
-        const std::vector<bool>& cellVisibilities;
+        const std::vector<std::vector<CellType> >* cells;
+        const std::vector<bool>* cellVisibilities;
     public:
         World(int moveIndex, int width, int height, std::vector<Player> players,
             std::vector<Trooper> troopers, std::vector<Bonus> bonuses,
@@ -41,6 +41,7 @@ namespace model {
         const std::vector<Trooper>& getTroopers() const;
         const std::vector<Bonus>& getBonuses() const;
         const std::vector<std::vector<CellType> >& getCells() const;
+        const std::vector<bool>& getCellVisibilities() const;
         bool isVisible(double maxRange,
             int viewerX, int viewerY, TrooperStance viewerStance,
             int objectX, int objectY, TrooperStance objectStance) const;

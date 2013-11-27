@@ -3,6 +3,7 @@
 #define _USE_MATH_DEFINES
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 
 using namespace model;
 using namespace std;

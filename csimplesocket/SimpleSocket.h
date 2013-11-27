@@ -192,7 +192,7 @@ public:
     /// Does the current instance of the socket object contain a valid socket
     /// descriptor.
     ///  @return true if the socket object contains a valid socket descriptor.
-    virtual bool IsSocketValid(void) { return (m_socket != SocketError); };
+    virtual bool IsSocketValid(void) { return (m_socket != (SOCKET)SocketError); };
 
     /// Provides a standard error code for cross platform development by
     /// mapping the operating system error to an error defined by the CSocket

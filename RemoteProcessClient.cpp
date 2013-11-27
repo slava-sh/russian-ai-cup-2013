@@ -1,6 +1,7 @@
 #include "RemoteProcessClient.h"
 
 #include <algorithm>
+#include <cstdlib>
 
 using namespace model;
 using namespace std;
@@ -11,8 +12,9 @@ const int LONG_SIZE_BYTES = sizeof(long long);
 
 RemoteProcessClient::RemoteProcessClient(string host, int port) {
     socket.Initialize();
+    socket.DisableNagleAlgoritm();
 
-    if (!socket.Open((uint8*) host.c_str(), port)) {
+    if (!socket.Open((uint8*) host.c_str(), (int16) port)) {
         exit(10001);
     }
 
@@ -30,7 +32,7 @@ RemoteProcessClient::~RemoteProcessClient() {
     }
 }
 
-void RemoteProcessClient::writeToken(string token) {
+void RemoteProcessClient::writeToken(const string& token) {
     writeEnum(AUTHENTICATION_TOKEN);
     writeString(token);
 }
@@ -117,13 +119,13 @@ PlayerContext* RemoteProcessClient::readPlayerContext() {
     return new PlayerContext(trooper, world);
 }
 
-void RemoteProcessClient::writeMove(Move move) {
+void RemoteProcessClient::writeMove(const Move& move) {
     writeEnum(MOVE_MESSAGE);
 
     writeBoolean(true);
 
-    writeEnum(move.getAction());
-    writeEnum(move.getDirection());
+    writeEnum((signed char) move.getAction());
+    writeEnum((signed char) move.getDirection());
     writeInt(move.getX());
     writeInt(move.getY());
 }
@@ -340,7 +342,7 @@ string RemoteProcessClient::readString() {
     return string((char*) (&bytes[0]), length);
 }
 
-void RemoteProcessClient::writeString(string value) {
+void RemoteProcessClient::writeString(const string& value) {
     vector<signed char> bytes(value.size());
     
     memcpy(&bytes[0], value.c_str(), value.size());
@@ -437,7 +439,7 @@ vector<signed char> RemoteProcessClient::readBytes(unsigned int byteCount) {
     return bytes;
 }
 
-void RemoteProcessClient::writeBytes(vector<signed char> bytes) {
+void RemoteProcessClient::writeBytes(const vector<signed char>& bytes) {
     vector<signed char>::size_type byteCount = bytes.size();
     unsigned int offset = 0;
     int sentByteCount;

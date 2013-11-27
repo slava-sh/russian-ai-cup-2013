@@ -13,9 +13,10 @@ int main(int argc, char* argv[]) {
         Runner runner(argv[1], argv[2], argv[3]);
         runner.run();
     } else {
-        Runner runner("localhost", "31001", "0000000000000000");
+        Runner runner("127.0.0.1", "31001", "0000000000000000");
         runner.run();
     }
+    
     return 0;
 }
 
