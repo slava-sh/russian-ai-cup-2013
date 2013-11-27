@@ -104,6 +104,7 @@ struct Dijkstra {
             add(cells, q, p, d + 1, Point(p.x, p.y + 1));
             add(cells, q, p, d + 1, Point(p.x, p.y - 1));
         }
+        dist[start.x][start.y] = inf;
         reached[start.x][start.y] = false;
     }
 
@@ -209,7 +210,7 @@ void MyStrategy::move(const Trooper& self,
             else {
                 target = enemy;
             }
-            logId("target = " << target);
+            logId("target = " << target << " dist = " << dijkstra.dist[target.x][target.y]);
             if (self.isHoldingFieldRation() &&
                     action_points >= game.getFieldRationEatCost()) {
                 action.setAction(EAT_FIELD_RATION);
@@ -241,7 +242,7 @@ void MyStrategy::move(const Trooper& self,
         return;
     }
 
-    logId("target = " << target);
+    logId("target = " << target << " dist = " << dijkstra.dist[target.x][target.y]);
     if (move_index == 1 || target == pos) {
         target = dijkstra.find_reachable(Point(random(sizeX), random(sizeY)));
         for (auto& bonus : bonuses) {
@@ -257,10 +258,10 @@ void MyStrategy::move(const Trooper& self,
                 target = b;
             }
         }
-        logId("target = " << target);
+        logId("target = " << target << " dist = " << dijkstra.dist[target.x][target.y]);
     }
 
-    Point new_pos = dijkstra.next(pos, target);
+    Point new_pos = dijkstra.next(pos, dijkstra.find_reachable(target));
     action.setAction(MOVE);
     action.setX(new_pos.x);
     action.setY(new_pos.y);
