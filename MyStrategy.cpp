@@ -191,7 +191,10 @@ void MyStrategy::move(const Trooper& self,
         }
     }
 
+    // TODO: heal a teammate
+
     if (self.getActionPoints() < game.getStandingMoveCost()) {
+        action.setAction(END_TURN);
         logId("accumulate points");
         return;
     }
@@ -232,6 +235,7 @@ void MyStrategy::move(const Trooper& self,
     logId("target = " << target);
 
     if (target == pos) {
+        action.setAction(END_TURN);
         logId("no move");
         return;
     }
