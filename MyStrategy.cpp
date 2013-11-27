@@ -9,12 +9,31 @@ using namespace std;
 MyStrategy::MyStrategy() {
 }
 
-void MyStrategy::move(const Trooper& self, const World& world, const Game& game, Move& move) {
+void MyStrategy::move(const Trooper& self,
+        const World& world, const Game& game, Move& action) {
     if (self.getActionPoints() < game.getStandingMoveCost()) {
         return;
     }
 
-    vector< vector< CellType > > cells = world.getCells();
+    auto& cells = world.getCells();
+    auto& troopers = world.getTroopers();
+
+    for (auto& enemy : troopers) {
+        if (enemy.isTeammate()) {
+            continue;
+        }
+        bool can_shoot =
+            self.getActionPoints() >= self.getShootCost()
+            && world.isVisible(self.getShootingRange(),
+                    self.getX(), self.getY(), self.getStance(),
+                    enemy.getX(), enemy.getY(), enemy.getStance());
+        if (can_shoot) {
+            action.setAction(SHOOT);
+            action.setX(enemy.getX());
+            action.setY(enemy.getY());
+            return;
+        }
+    }
 
     int targetX = world.getWidth() / 2;
     int targetY = world.getHeight() / 2;
@@ -30,22 +49,22 @@ void MyStrategy::move(const Trooper& self, const World& world, const Game& game,
         offsetY != 0 && cells[self.getX()][self.getY() + offsetY] == FREE;
 
     if (canMoveX || canMoveY) {
-        move.setAction(MOVE);
+        action.setAction(MOVE);
 
         if (canMoveX && canMoveY) {
             if (rand() % 2 == 0) {
-                move.setX(self.getX() + offsetX);
-                move.setY(self.getY());
+                action.setX(self.getX() + offsetX);
+                action.setY(self.getY());
             } else {
-                move.setX(self.getX());
-                move.setY(self.getY() + offsetY);
+                action.setX(self.getX());
+                action.setY(self.getY() + offsetY);
             }
         } else if (canMoveX) {
-            move.setX(self.getX() + offsetX);
-            move.setY(self.getY());
+            action.setX(self.getX() + offsetX);
+            action.setY(self.getY());
         } else {
-            move.setX(self.getX());
-            move.setY(self.getY() + offsetY);
+            action.setX(self.getX());
+            action.setY(self.getY() + offsetY);
         }
 
         return;
