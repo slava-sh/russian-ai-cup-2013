@@ -35,6 +35,10 @@ struct Point {
         return 0 <= x && x < sizeX && 0 <= y && y < sizeY;
     }
 
+    bool has_neigh(const Point &p) {
+        return p.isCorrect() && abs(x - p.x) + abs(y - p.y) == 1;
+    }
+
     friend bool operator==(const Point& a, const Point& b) {
         return a.x == b.x && a.y == b.y;
     }
@@ -201,7 +205,8 @@ void MyStrategy::move(const Trooper& self,
             action_points >= game.getFieldMedicHealCost()) {
         Trooper to_heal = self;
         for (auto& t : teammates) {
-            if (t.getHitpoints() < to_heal.getHitpoints()) {
+            if (pos.has_neigh(Point(t)) &&
+                    t.getHitpoints() < to_heal.getHitpoints()) {
                 to_heal = t;
             }
         }
@@ -209,6 +214,7 @@ void MyStrategy::move(const Trooper& self,
             action.setAction(HEAL);
             action.setX(to_heal.getX());
             action.setY(to_heal.getY());
+            logId("heal " << to_heal.getType() << " (" << to_heal.getHitpoints() << ") at " << Point(to_heal));
             return;
         }
     }
