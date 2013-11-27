@@ -104,6 +104,7 @@ struct Dijkstra {
             add(cells, q, p, d + 1, Point(p.x, p.y + 1));
             add(cells, q, p, d + 1, Point(p.x, p.y - 1));
         }
+        reached[start.x][start.y] = false;
     }
 
     void add(const Cells& cells, set< pair< int, Point > >& q,
@@ -118,7 +119,7 @@ struct Dijkstra {
         }
     }
 
-    Point find_reachable(const Cells& cells, Point p) {
+    Point find_reachable(Point p) {
         while (!reached[p.x][p.y]) {
             p.x += 1;
             if (p.x == sizeX) {
@@ -169,11 +170,30 @@ void MyStrategy::move(const Trooper& self,
     }
     logId("we see " << enemies.size() << " enemies");
 
+    if (self.getType() == FIELD_MEDIC &&
+            action_points >= game.getFieldMedicHealCost()) {
+        Trooper to_heal = self;
+        for (auto& t : teammates) {
+            if (pos.has_neigh(Point(t)) &&
+                    t.getHitpoints() < to_heal.getHitpoints()) {
+                to_heal = t;
+            }
+        }
+        if (to_heal.getHitpoints() < self.getMaximalHitpoints()) {
+            action.setAction(HEAL);
+            action.setX(to_heal.getX());
+            action.setY(to_heal.getY());
+            logId("heal " << to_heal.getType() << " (" << to_heal.getHitpoints() << ") at " << Point(to_heal));
+            return;
+        }
+    }
+
     for (auto& enemy : enemies) {
         if (world.isVisible(self.getShootingRange(),
                     self.getX(), self.getY(), self.getStance(),
                     enemy.getX(), enemy.getY(), enemy.getStance())) {
             logId("seeing an enemy");
+            target = Point(enemy);
             if (self.isHoldingFieldRation() &&
                     action_points >= game.getFieldRationEatCost()) {
                 action.setAction(EAT_FIELD_RATION);
@@ -199,26 +219,6 @@ void MyStrategy::move(const Trooper& self,
         }
     }
 
-    // TODO: heal a teammate
-
-    if (self.getType() == FIELD_MEDIC &&
-            action_points >= game.getFieldMedicHealCost()) {
-        Trooper to_heal = self;
-        for (auto& t : teammates) {
-            if (pos.has_neigh(Point(t)) &&
-                    t.getHitpoints() < to_heal.getHitpoints()) {
-                to_heal = t;
-            }
-        }
-        if (to_heal.getHitpoints() < self.getMaximalHitpoints()) {
-            action.setAction(HEAL);
-            action.setX(to_heal.getX());
-            action.setY(to_heal.getY());
-            logId("heal " << to_heal.getType() << " (" << to_heal.getHitpoints() << ") at " << Point(to_heal));
-            return;
-        }
-    }
-
     if (action_points < game.getStandingMoveCost()) {
         action.setAction(END_TURN);
         logId("accumulate points");
@@ -227,41 +227,23 @@ void MyStrategy::move(const Trooper& self,
 
     Dijkstra dijkstra(pos, cells);
 
-    if (move_index == 1) {
-        target = dijkstra.find_reachable(cells, Point(sizeX / 2, sizeY / 2));
-    }
-    while (cells[target.x][target.y] != FREE) {
-        target = dijkstra.find_reachable(cells, Point(random(sizeX), random(sizeY)));
-    }
     logId("target = " << target);
-
-    for (auto& enemy : enemies) {
-        Point e(enemy);
-        if (dijkstra.dist[e.x][e.y] < dijkstra.dist[target.x][target.y]) {
-            target = e;
+    if (move_index == 1 || target == pos) {
+        target = dijkstra.find_reachable(Point(random(sizeX), random(sizeY)));
+        for (auto& bonus : bonuses) {
+            Point b(bonus);
+            if (
+                    (bonus.getType() == GRENADE && self.isHoldingGrenade()) ||
+                    (bonus.getType() == MEDIKIT && self.isHoldingMedikit()) ||
+                    (bonus.getType() == FIELD_RATION && self.isHoldingFieldRation())
+               ) {
+                continue;
+            }
+            if (dijkstra.dist[b.x][b.y] < dijkstra.dist[target.x][target.y]) {
+                target = b;
+            }
         }
-    }
-    logId("target = " << target);
-
-    for (auto& bonus : bonuses) {
-        Point b(bonus);
-        if (
-                (bonus.getType() == GRENADE && self.isHoldingGrenade()) ||
-                (bonus.getType() == MEDIKIT && self.isHoldingMedikit()) ||
-                (bonus.getType() == FIELD_RATION && self.isHoldingFieldRation())
-           ) {
-            continue;
-        }
-        if (dijkstra.dist[b.x][b.y] < dijkstra.dist[target.x][target.y]) {
-            target = b;
-        }
-    }
-    logId("target = " << target);
-
-    if (target == pos) {
-        action.setAction(END_TURN);
-        logId("no move");
-        return;
+        logId("target = " << target);
     }
 
     Point next = target;
