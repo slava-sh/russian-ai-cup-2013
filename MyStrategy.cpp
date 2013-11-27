@@ -168,6 +168,15 @@ void MyStrategy::move(const Trooper& self,
                     self.getX(), self.getY(), self.getStance(),
                     enemy.getX(), enemy.getY(), enemy.getStance());
         if (can_shoot) {
+            if (self.isHoldingFieldRation()) {
+                action.setAction(EAT_FIELD_RATION);
+                return;
+            }
+            if (self.isHoldingMedikit()) {
+                action.setAction(USE_MEDIKIT);
+                return;
+            }
+            // TODO: grenade
             action.setAction(SHOOT);
             action.setX(enemy.getX());
             action.setY(enemy.getY());
