@@ -145,16 +145,19 @@ void MyStrategy::move(const Trooper& self,
     }
 
     Point pos(self);
+    int action_points = self.getActionPoints();
     logId("move number " << move_index);
-    logId(self.getType() << " (" << self.getActionPoints() << ") at " << pos);
+    logId(self.getType() << " (" << action_points << ") at " << pos);
 
     auto& bonuses = world.getBonuses();
     auto& troopers = world.getTroopers();
     auto cells = world.getCells();
+    vector< Trooper > teammates;
     vector< Trooper > enemies;
     for (auto& trooper : troopers) {
         if (trooper.isTeammate()) {
             cells[trooper.getX()][trooper.getY()] = HIGH_COVER;
+            teammates.push_back(trooper);
         }
         else {
             enemies.push_back(trooper);
@@ -168,20 +171,21 @@ void MyStrategy::move(const Trooper& self,
                     enemy.getX(), enemy.getY(), enemy.getStance())) {
             logId("seeing an enemy");
             if (self.isHoldingFieldRation() &&
-                    self.getActionPoints() >= game.getFieldRationEatCost()) {
+                    action_points >= game.getFieldRationEatCost()) {
                 action.setAction(EAT_FIELD_RATION);
                 logId("eat field ration");
                 return;
             }
             if (self.isHoldingMedikit() &&
-                    self.getActionPoints() >= game.getMedikitUseCost()) {
+                    action_points >= game.getMedikitUseCost()) {
+                // TODO: heal a teammate
                 action.setAction(USE_MEDIKIT);
                 action.setDirection(CURRENT_POINT);
                 logId("use medkit");
                 return;
             }
             // TODO: grenade
-            if (self.getActionPoints() >= self.getShootCost()) {
+            if (action_points >= self.getShootCost()) {
                 action.setAction(SHOOT);
                 action.setX(enemy.getX());
                 action.setY(enemy.getY());
@@ -193,7 +197,23 @@ void MyStrategy::move(const Trooper& self,
 
     // TODO: heal a teammate
 
-    if (self.getActionPoints() < game.getStandingMoveCost()) {
+    if (self.getType() == FIELD_MEDIC &&
+            action_points >= game.getFieldMedicHealCost()) {
+        Trooper to_heal = self;
+        for (auto& t : teammates) {
+            if (t.getHitpoints() < to_heal.getHitpoints()) {
+                to_heal = t;
+            }
+        }
+        if (to_heal.getHitpoints() < self.getMaximalHitpoints()) {
+            action.setAction(HEAL);
+            action.setX(to_heal.getX());
+            action.setY(to_heal.getY());
+            return;
+        }
+    }
+
+    if (action_points < game.getStandingMoveCost()) {
         action.setAction(END_TURN);
         logId("accumulate points");
         return;
