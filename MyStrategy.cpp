@@ -1,27 +1,161 @@
 #include "MyStrategy.h"
 
+#include <iostream>
+#include <vector>
+#include <set>
 #include <cmath>
 #include <cstdlib>
 
 using namespace model;
 using namespace std;
 
+typedef vector< vector< CellType > > Cells;
+
+const int inf = 1e9;
+int sizeX;
+int sizeY;
+bool move_index = 0;
+
+struct Point {
+    int x, y;
+
+    Point() {}
+    Point(int x, int y): x(x), y(y) {}
+    Point(const Unit& u): x(u.getX()), y(u.getY()) {}
+
+    bool isCorrect() const {
+        return 0 <= x && x < sizeX && 0 <= y && y < sizeY;
+    }
+
+    friend bool operator==(const Point& a, const Point& b) {
+        return a.x == b.x && a.y == b.y;
+    }
+
+    friend bool operator!=(const Point& a, const Point& b) {
+        return !(a == b);
+    }
+
+    friend bool operator<(const Point& a, const Point& b) {
+        return a.x < b.x || (a.x == b.x && a.y < b.y);
+    }
+
+    friend ostream& operator<<(ostream& out, const Point &p) {
+        return out << p.x << " " << p.y;
+    }
+};
+
+int random(int bound) { // [0, bound)
+    return rand() % bound;
+}
+
+int random(int a, int b) { // [a, b)
+    return a + random(b - a);
+}
+
+template< class T >
+const T& random_choice(const vector< T >& ts) {
+    return ts[random(ts.size())];
+}
+
+template< class T >
+T& random_choice(vector< T >& ts) {
+    return ts[random(ts.size())];
+}
+
+bool one_in(int x) {
+    return random(x - 1) == 0;
+}
+
+struct Dijkstra {
+    vector< vector< int   > > dist;
+    vector< vector< Point > > prev;
+    vector< vector< char  > > reached;
+
+    Dijkstra(const Point& start, const Cells& cells):
+            dist(sizeX, vector< int   >(sizeY, inf)),
+            prev(sizeX, vector< Point >(sizeY)),
+            reached(sizeX, vector< char  >(sizeY, false)) {
+        dist[start.x][start.y] = 0;
+        set< pair< int, Point > > q;
+        q.insert(make_pair(0, start));
+        while (!q.empty()) {
+            auto it = q.begin();
+            int d   = it->first;
+            Point p = it->second;
+            q.erase(it);
+            if (reached[p.x][p.y]) {
+                continue;
+            }
+            reached[p.x][p.y] = true;
+            add(cells, q, p, d + 1, Point(p.x + 1, p.y));
+            add(cells, q, p, d + 1, Point(p.x - 1, p.y));
+            add(cells, q, p, d + 1, Point(p.x, p.y + 1));
+            add(cells, q, p, d + 1, Point(p.x, p.y - 1));
+        }
+    }
+
+    void add(const Cells& cells, set< pair< int, Point > >& q,
+            const Point& cur, int d, const Point& p) {
+        if (p.isCorrect()
+                && cells[p.x][p.y] == FREE
+                && !reached[p.x][p.y]
+                && d < dist[p.x][p.y]) {
+            dist[p.x][p.y] = d;
+            prev[p.x][p.y] = cur;
+            q.insert(make_pair(d, p));
+        }
+    }
+
+    Point find_reachable(const Cells& cells, Point p) {
+        while (!reached[p.x][p.y]) {
+            p.x += 1;
+            if (p.x == sizeX) {
+                p.x = 0;
+                p.y += 1;
+                if (p.y == sizeY) {
+                    p.y = 0;
+                }
+            }
+        }
+        return p;
+    }
+};
+
 MyStrategy::MyStrategy() {
 }
 
+Point long_target;
+
 void MyStrategy::move(const Trooper& self,
         const World& world, const Game& game, Move& action) {
+
+    move_index += 1;
+
+    Point pos(self);
+cerr << self.getId() << ": move number " << move_index << endl;
+cerr << self.getId() << ": at " << pos << endl;
+
     if (self.getActionPoints() < game.getStandingMoveCost()) {
+cerr << self.getId() << ": accumulate points" << endl;
         return;
     }
 
+    sizeX = world.getWidth();
+    sizeY = world.getHeight();
+
+    auto& bonuses = world.getBonuses();
     auto& cells = world.getCells();
     auto& troopers = world.getTroopers();
 
-    for (auto& enemy : troopers) {
-        if (enemy.isTeammate()) {
-            continue;
+    vector< Trooper > enemies;
+    for (auto& trooper : troopers) {
+        if (!trooper.isTeammate()) {
+            enemies.push_back(trooper);
         }
+    }
+cerr << self.getId() << ": we see " << enemies.size() << " enemies" << endl;
+
+    for (auto& enemy : enemies) {
         bool can_shoot =
             self.getActionPoints() >= self.getShootCost()
             && world.isVisible(self.getShootingRange(),
@@ -31,42 +165,83 @@ void MyStrategy::move(const Trooper& self,
             action.setAction(SHOOT);
             action.setX(enemy.getX());
             action.setY(enemy.getY());
+cerr << self.getId() << ": shoot at " << Point(action.getX(), action.getY()) << endl;
             return;
         }
     }
 
-    int targetX = world.getWidth() / 2;
-    int targetY = world.getHeight() / 2;
+    Dijkstra dijkstra(pos, cells);
 
-    int offsetX = self.getX() > targetX ?
-        -1 : (self.getX() < targetX ? 1 : 0);
-    int offsetY = self.getY() > targetY ?
-        -1 : (self.getY() < targetY ? 1 : 0);
-
-    bool canMoveX =
-        offsetX != 0 && cells[self.getX() + offsetX][self.getY()] == FREE;
-    bool canMoveY =
-        offsetY != 0 && cells[self.getX()][self.getY() + offsetY] == FREE;
-
-    if (canMoveX || canMoveY) {
-        action.setAction(MOVE);
-
-        if (canMoveX && canMoveY) {
-            if (rand() % 2 == 0) {
-                action.setX(self.getX() + offsetX);
-                action.setY(self.getY());
-            } else {
-                action.setX(self.getX());
-                action.setY(self.getY() + offsetY);
-            }
-        } else if (canMoveX) {
-            action.setX(self.getX() + offsetX);
-            action.setY(self.getY());
-        } else {
-            action.setX(self.getX());
-            action.setY(self.getY() + offsetY);
-        }
-
-        return;
+    if (move_index == 1) {
+        long_target = dijkstra.find_reachable(cells, Point(sizeX / 2, sizeY / 2));
     }
+
+    Point target = long_target;
+    while (target == pos) {
+        long_target = dijkstra.find_reachable(cells, Point(random(sizeX), random(sizeY)));
+        target = long_target;
+    }
+cerr << self.getId() << ": target = " << target << endl;
+
+    for (auto& enemy : enemies) {
+        Point e(enemy);
+        if (dijkstra.dist[e.x][e.y] < dijkstra.dist[target.x][target.y]) {
+            target = e;
+        }
+    }
+cerr << self.getId() << ": target = " << target << endl;
+
+    for (auto& bonus : bonuses) {
+        Point b(bonus);
+        if (dijkstra.dist[b.x][b.y] < dijkstra.dist[target.x][target.y]) {
+            target = b;
+        }
+    }
+cerr << self.getId() << ": target = " << target << endl;
+
+    Point next = target;
+    while (dijkstra.prev[next.x][next.y] != pos) {
+        next = dijkstra.prev[next.x][next.y];
+    }
+cerr << self.getId() << ": move from " << pos << " to " << next << endl;
+    action.setAction(MOVE);
+    action.setX(next.x);
+    action.setY(next.y);
+
+    // if (bonuses.empty()) {
+    //     auto& enemy = random_choice(enemies);
+    //     target.x = enemy.getX();
+    //     target.y = enemy.getY();
+    // }
+    // else {
+    //     auto& bonus = random_choice(bonuses);
+    //     target.x = bonus.getX();
+    //     target.y = bonus.getY();
+    // }
+
+    // int offsetX = self.getX() > target.x ? -1 : (self.getX() < target.x ? 1 : 0);
+    // int offsetY = self.getY() > target.y ? -1 : (self.getY() < target.y ? 1 : 0);
+
+    // bool canMoveX = offsetX != 0 && cells[self.getX() + offsetX][self.getY()] == FREE;
+    // bool canMoveY = offsetY != 0 && cells[self.getX()][self.getY() + offsetY] == FREE;
+
+    // if (canMoveX || canMoveY) {
+    //     action.setAction(MOVE);
+    //     if (canMoveX && canMoveY) {
+    //         if (one_in(2)) {
+    //             action.setX(self.getX() + offsetX);
+    //             action.setY(self.getY());
+    //         } else {
+    //             action.setX(self.getX());
+    //             action.setY(self.getY() + offsetY);
+    //         }
+    //     } else if (canMoveX) {
+    //         action.setX(self.getX() + offsetX);
+    //         action.setY(self.getY());
+    //     } else {
+    //         action.setX(self.getX());
+    //         action.setY(self.getY() + offsetY);
+    //     }
+    //     return;
+    // }
 }
