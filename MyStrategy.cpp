@@ -180,6 +180,22 @@ void MyStrategy::move(const Trooper& self,
 
     Dijkstra dijkstra(pos, cells);
 
+    for (auto& enemy : enemies) {
+        if (world.isVisible(self.getShootingRange(),
+                    self.getX(), self.getY(), self.getStance(),
+                    enemy.getX(), enemy.getY(), enemy.getStance())) {
+            Point e(enemy);
+            logId("seeing enemy at " << e);
+            if (dijkstra.reached[e.x][e.y]) {
+                target = dijkstra.next(pos, e);
+            }
+            else {
+                target = enemy;
+            }
+            logId("target = " << target << " dist = " << dijkstra.dist[target.x][target.y]);
+        }
+    }
+
     if (self.getType() == FIELD_MEDIC &&
             action_points >= game.getFieldMedicHealCost()) {
         Trooper to_heal = self;
@@ -202,15 +218,6 @@ void MyStrategy::move(const Trooper& self,
         if (world.isVisible(self.getShootingRange(),
                     self.getX(), self.getY(), self.getStance(),
                     enemy.getX(), enemy.getY(), enemy.getStance())) {
-            logId("seeing an enemy");
-            Point e(enemy);
-            if (dijkstra.reached[e.x][e.y]) {
-                target = dijkstra.next(pos, e);
-            }
-            else {
-                target = enemy;
-            }
-            logId("target = " << target << " dist = " << dijkstra.dist[target.x][target.y]);
             if (self.isHoldingFieldRation() &&
                     action_points >= game.getFieldRationEatCost()) {
                 action.setAction(EAT_FIELD_RATION);
