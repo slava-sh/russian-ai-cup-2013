@@ -138,11 +138,11 @@ void MyStrategy::move(const Trooper& self,
     move_index += 1;
 
     Point pos(self);
-log(self.getId() << ": move number " << move_index);
-log(self.getId() << ": at " << pos);
+    log(self.getId() << ": move number " << move_index);
+    log(self.getId() << ": at " << pos);
 
     if (self.getActionPoints() < game.getStandingMoveCost()) {
-log(self.getId() << ": accumulate points");
+        log(self.getId() << ": accumulate points");
         return;
     }
 
@@ -159,7 +159,7 @@ log(self.getId() << ": accumulate points");
             enemies.push_back(trooper);
         }
     }
-log(self.getId() << ": we see " << enemies.size() << " enemies");
+    log(self.getId() << ": we see " << enemies.size() << " enemies");
 
     for (auto& enemy : enemies) {
         bool can_shoot =
@@ -171,7 +171,7 @@ log(self.getId() << ": we see " << enemies.size() << " enemies");
             action.setAction(SHOOT);
             action.setX(enemy.getX());
             action.setY(enemy.getY());
-log(self.getId() << ": shoot at " << Point(action.getX(), action.getY()));
+            log(self.getId() << ": shoot at " << Point(action.getX(), action.getY()));
             return;
         }
     }
@@ -187,7 +187,7 @@ log(self.getId() << ": shoot at " << Point(action.getX(), action.getY()));
         long_target = dijkstra.find_reachable(cells, Point(random(sizeX), random(sizeY)));
         target = long_target;
     }
-log(self.getId() << ": target = " << target);
+    log(self.getId() << ": target = " << target);
 
     for (auto& enemy : enemies) {
         Point e(enemy);
@@ -195,22 +195,34 @@ log(self.getId() << ": target = " << target);
             target = e;
         }
     }
-log(self.getId() << ": target = " << target);
+    log(self.getId() << ": target = " << target);
 
     for (auto& bonus : bonuses) {
         Point b(bonus);
+        if (
+                (bonus.getType() == GRENADE && self.isHoldingGrenade()) ||
+                (bonus.getType() == MEDIKIT && self.isHoldingMedikit()) ||
+                (bonus.getType() == FIELD_RATION && self.isHoldingFieldRation())
+           ) {
+            continue;
+        }
         if (dijkstra.dist[b.x][b.y] < dijkstra.dist[target.x][target.y]) {
             target = b;
         }
     }
-log(self.getId() << ": target = " << target);
+    log(self.getId() << ": target = " << target);
+
+    if (target == pos) {
+        log(self.getId() << ": no move");
+        return;
+    }
 
     Point next = target;
     while (dijkstra.prev[next.x][next.y] != pos) {
         next = dijkstra.prev[next.x][next.y];
     }
-log(self.getId() << ": move from " << pos << " to " << next);
     action.setAction(MOVE);
     action.setX(next.x);
     action.setY(next.y);
+    log(self.getId() << ": move from " << pos << " to " << next);
 }
