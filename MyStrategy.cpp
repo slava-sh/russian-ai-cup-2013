@@ -132,6 +132,13 @@ struct Dijkstra {
         }
         return p;
     }
+
+    Point next(const Point& pos, Point target) {
+        while (prev[target.x][target.y] != pos) {
+            target = prev[target.x][target.y];
+        }
+        return target;
+    }
 };
 
 MyStrategy::MyStrategy() {
@@ -170,6 +177,8 @@ void MyStrategy::move(const Trooper& self,
     }
     logId("we see " << enemies.size() << " enemies");
 
+    Dijkstra dijkstra(pos, cells);
+
     if (self.getType() == FIELD_MEDIC &&
             action_points >= game.getFieldMedicHealCost()) {
         Trooper to_heal = self;
@@ -193,7 +202,14 @@ void MyStrategy::move(const Trooper& self,
                     self.getX(), self.getY(), self.getStance(),
                     enemy.getX(), enemy.getY(), enemy.getStance())) {
             logId("seeing an enemy");
-            target = Point(enemy);
+            Point e(enemy);
+            if (dijkstra.reached[e.x][e.y]) {
+                target = dijkstra.next(pos, e);
+            }
+            else {
+                target = enemy;
+            }
+            logId("target = " << target);
             if (self.isHoldingFieldRation() &&
                     action_points >= game.getFieldRationEatCost()) {
                 action.setAction(EAT_FIELD_RATION);
@@ -225,8 +241,6 @@ void MyStrategy::move(const Trooper& self,
         return;
     }
 
-    Dijkstra dijkstra(pos, cells);
-
     logId("target = " << target);
     if (move_index == 1 || target == pos) {
         target = dijkstra.find_reachable(Point(random(sizeX), random(sizeY)));
@@ -246,12 +260,9 @@ void MyStrategy::move(const Trooper& self,
         logId("target = " << target);
     }
 
-    Point next = target;
-    while (dijkstra.prev[next.x][next.y] != pos) {
-        next = dijkstra.prev[next.x][next.y];
-    }
+    Point new_pos = dijkstra.next(pos, target);
     action.setAction(MOVE);
-    action.setX(next.x);
-    action.setY(next.y);
-    logId("move from " << pos << " to " << next);
+    action.setX(new_pos.x);
+    action.setY(new_pos.y);
+    logId("move from " << pos << " to " << new_pos);
 }
