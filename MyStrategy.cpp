@@ -132,7 +132,7 @@ struct Dijkstra {
 MyStrategy::MyStrategy() {
 }
 
-Point long_target;
+Point target;
 
 void MyStrategy::move(const Trooper& self,
         const World& world, const Game& game, Move& action) {
@@ -222,12 +222,10 @@ void MyStrategy::move(const Trooper& self,
     Dijkstra dijkstra(pos, cells);
 
     if (move_index == 1) {
-        long_target = dijkstra.find_reachable(cells, Point(sizeX / 2, sizeY / 2));
+        target = dijkstra.find_reachable(cells, Point(sizeX / 2, sizeY / 2));
     }
-    Point target = long_target;
-    while (target == pos) {
-        long_target = dijkstra.find_reachable(cells, Point(random(sizeX), random(sizeY)));
-        target = long_target;
+    while (cells[target.x][target.y] != FREE) {
+        target = dijkstra.find_reachable(cells, Point(random(sizeX), random(sizeY)));
     }
     logId("target = " << target);
 
