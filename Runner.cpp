@@ -16,7 +16,6 @@ int main(int argc, char* argv[]) {
         Runner runner("localhost", "31001", "0000000000000000");
         runner.run();
     }
-    
     return 0;
 }
 
