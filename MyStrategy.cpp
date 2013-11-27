@@ -146,7 +146,7 @@ void MyStrategy::move(const Trooper& self,
 
     Point pos(self);
     logId("move number " << move_index);
-    logId("at " << pos);
+    logId(self.getType() << " (" << self.getActionPoints() << ") at " << pos);
 
     auto& bonuses = world.getBonuses();
     auto& troopers = world.getTroopers();
@@ -166,7 +166,7 @@ void MyStrategy::move(const Trooper& self,
         if (world.isVisible(self.getShootingRange(),
                     self.getX(), self.getY(), self.getStance(),
                     enemy.getX(), enemy.getY(), enemy.getStance())) {
-            logId("see an enemy");
+            logId("seeing an enemy");
             if (self.isHoldingFieldRation() &&
                     self.getActionPoints() >= game.getFieldRationEatCost()) {
                 action.setAction(EAT_FIELD_RATION);
@@ -201,7 +201,6 @@ void MyStrategy::move(const Trooper& self,
     if (move_index == 1) {
         long_target = dijkstra.find_reachable(cells, Point(sizeX / 2, sizeY / 2));
     }
-
     Point target = long_target;
     while (target == pos) {
         long_target = dijkstra.find_reachable(cells, Point(random(sizeX), random(sizeY)));
