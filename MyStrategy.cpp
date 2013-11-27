@@ -104,7 +104,6 @@ struct Dijkstra {
 
     void add(const Cells& cells, set< pair< int, Point > >& q,
             const Point& cur, int d, const Point& p) {
-        // TODO: cells locked by teammates
         if (p.isCorrect()
                 && cells[p.x][p.y] == FREE
                 && !reached[p.x][p.y]
@@ -150,12 +149,14 @@ void MyStrategy::move(const Trooper& self,
     logId("at " << pos);
 
     auto& bonuses = world.getBonuses();
-    auto& cells = world.getCells();
     auto& troopers = world.getTroopers();
-
+    auto cells = world.getCells();
     vector< Trooper > enemies;
     for (auto& trooper : troopers) {
-        if (!trooper.isTeammate()) {
+        if (trooper.isTeammate()) {
+            cells[trooper.getX()][trooper.getY()] = HIGH_COVER;
+        }
+        else {
             enemies.push_back(trooper);
         }
     }
