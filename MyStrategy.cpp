@@ -15,6 +15,8 @@ using namespace std;
 #define log(x)
 #endif
 
+#define logId(x) log(self.getId() << ": " << x)
+
 typedef vector< vector< CellType > > Cells;
 
 const int inf = 1e9;
@@ -102,6 +104,7 @@ struct Dijkstra {
 
     void add(const Cells& cells, set< pair< int, Point > >& q,
             const Point& cur, int d, const Point& p) {
+        // TODO: cells locked by teammates
         if (p.isCorrect()
                 && cells[p.x][p.y] == FREE
                 && !reached[p.x][p.y]
@@ -137,17 +140,14 @@ void MyStrategy::move(const Trooper& self,
 
     move_index += 1;
 
-    Point pos(self);
-    log(self.getId() << ": move number " << move_index);
-    log(self.getId() << ": at " << pos);
-
-    if (self.getActionPoints() < game.getStandingMoveCost()) {
-        log(self.getId() << ": accumulate points");
-        return;
+    if (move_index == 1) {
+        sizeX = world.getWidth();
+        sizeY = world.getHeight();
     }
 
-    sizeX = world.getWidth();
-    sizeY = world.getHeight();
+    Point pos(self);
+    logId("move number " << move_index);
+    logId("at " << pos);
 
     auto& bonuses = world.getBonuses();
     auto& cells = world.getCells();
@@ -159,30 +159,40 @@ void MyStrategy::move(const Trooper& self,
             enemies.push_back(trooper);
         }
     }
-    log(self.getId() << ": we see " << enemies.size() << " enemies");
+    logId("we see " << enemies.size() << " enemies");
 
     for (auto& enemy : enemies) {
-        bool can_shoot =
-            self.getActionPoints() >= self.getShootCost()
-            && world.isVisible(self.getShootingRange(),
+        if (world.isVisible(self.getShootingRange(),
                     self.getX(), self.getY(), self.getStance(),
-                    enemy.getX(), enemy.getY(), enemy.getStance());
-        if (can_shoot) {
-            if (self.isHoldingFieldRation()) {
+                    enemy.getX(), enemy.getY(), enemy.getStance())) {
+            logId("see an enemy");
+            if (self.isHoldingFieldRation() &&
+                    self.getActionPoints() >= game.getFieldRationEatCost()) {
                 action.setAction(EAT_FIELD_RATION);
+                logId("eat field ration");
                 return;
             }
-            if (self.isHoldingMedikit()) {
+            if (self.isHoldingMedikit() &&
+                    self.getActionPoints() >= game.getMedikitUseCost()) {
                 action.setAction(USE_MEDIKIT);
+                action.setDirection(CURRENT_POINT);
+                logId("use medkit");
                 return;
             }
             // TODO: grenade
-            action.setAction(SHOOT);
-            action.setX(enemy.getX());
-            action.setY(enemy.getY());
-            log(self.getId() << ": shoot at " << Point(action.getX(), action.getY()));
-            return;
+            if (self.getActionPoints() >= self.getShootCost()) {
+                action.setAction(SHOOT);
+                action.setX(enemy.getX());
+                action.setY(enemy.getY());
+                logId("shoot at " << Point(action.getX(), action.getY()));
+                return;
+            }
         }
+    }
+
+    if (self.getActionPoints() < game.getStandingMoveCost()) {
+        logId("accumulate points");
+        return;
     }
 
     Dijkstra dijkstra(pos, cells);
@@ -196,7 +206,7 @@ void MyStrategy::move(const Trooper& self,
         long_target = dijkstra.find_reachable(cells, Point(random(sizeX), random(sizeY)));
         target = long_target;
     }
-    log(self.getId() << ": target = " << target);
+    logId("target = " << target);
 
     for (auto& enemy : enemies) {
         Point e(enemy);
@@ -204,7 +214,7 @@ void MyStrategy::move(const Trooper& self,
             target = e;
         }
     }
-    log(self.getId() << ": target = " << target);
+    logId("target = " << target);
 
     for (auto& bonus : bonuses) {
         Point b(bonus);
@@ -219,10 +229,10 @@ void MyStrategy::move(const Trooper& self,
             target = b;
         }
     }
-    log(self.getId() << ": target = " << target);
+    logId("target = " << target);
 
     if (target == pos) {
-        log(self.getId() << ": no move");
+        logId("no move");
         return;
     }
 
@@ -233,5 +243,5 @@ void MyStrategy::move(const Trooper& self,
     action.setAction(MOVE);
     action.setX(next.x);
     action.setY(next.y);
-    log(self.getId() << ": move from " << pos << " to " << next);
+    logId("move from " << pos << " to " << next);
 }
