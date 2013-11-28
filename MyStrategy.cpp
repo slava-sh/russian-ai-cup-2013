@@ -308,18 +308,15 @@ struct SlavaStrategy {
         }
 
         if (state.has_field_ration) {
-            int points = action_points - game.getStandingMoveCost();
+            int points = action_points - game.getFieldRationEatCost();
             if (points >= 0) {
-                for (auto& n : state.pos.neighs()) {
-                    if (cells[n.x][n.y] == FREE) {
-                        State new_state = state;
-                        new_state.pos = n;
-                        if (action_number == 1) {
-                            cur_action = make_action(MOVE, n);
-                        }
-                        maximize_score(action_number, points, new_state);
-                    }
+                State new_state = state;
+                points += game.getFieldRationBonusActionPoints();
+                new_state.has_field_ration = false;
+                if (action_number == 1) {
+                    cur_action = make_action(EAT_FIELD_RATION);
                 }
+                maximize_score(action_number, points, new_state);
             }
         }
     }
