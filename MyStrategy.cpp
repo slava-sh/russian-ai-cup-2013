@@ -194,15 +194,21 @@ struct SlavaStrategy {
         }
 
         {
+            int commander_dist = inf;
             int mates_dist = 0;
             for (auto& mate : teammates) {
-                mates_dist += ceil(state.pos.distance_to(mate));
+                int dist = ceil(state.pos.distance_to(mate));
+                mates_dist += dist;
+                if (mate.getType() == COMMANDER) {
+                    commander_dist = dist;
+                }
             }
 
             int target_dist = ceil(state.pos.distance_to(target));
 
             int score = 5 * (-target_dist)
                       + (-mates_dist)
+                      + 3 * (-commander_dist)
                       + 40 * (-state.mate_damage)
                       + 30 * state.damage
                       + 5 * state.has_medkit
