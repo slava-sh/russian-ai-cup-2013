@@ -39,6 +39,15 @@ struct Point {
         return p.isCorrect() && abs(x - p.x) + abs(y - p.y) == 1;
     }
 
+    vector< Point > neighs() const {
+        vector< Point > result;
+        if (x - 1 >= 0)    { result.push_back(Point(x - 1, y)); }
+        if (y - 1 >= 0)    { result.push_back(Point(x, y - 1)); }
+        if (x + 1 < sizeX) { result.push_back(Point(x + 1, y)); }
+        if (y + 1 < sizeY) { result.push_back(Point(x, y + 1)); }
+        return result;
+    }
+
     friend bool operator==(const Point& a, const Point& b) {
         return a.x == b.x && a.y == b.y;
     }
@@ -99,25 +108,19 @@ struct Dijkstra {
                 continue;
             }
             reached[p.x][p.y] = true;
-            add(cells, q, p, d + 1, Point(p.x + 1, p.y));
-            add(cells, q, p, d + 1, Point(p.x - 1, p.y));
-            add(cells, q, p, d + 1, Point(p.x, p.y + 1));
-            add(cells, q, p, d + 1, Point(p.x, p.y - 1));
+            d += 1;
+            for (auto& n : p.neighs()) {
+                if (cells[n.x][n.y] == FREE
+                        && !reached[n.x][n.y]
+                        && d < dist[n.x][n.y]) {
+                    dist[n.x][n.y] = d;
+                    prev[n.x][n.y] = p;
+                    q.insert(make_pair(d, n));
+                }
+            }
         }
         dist[start.x][start.y] = inf;
         reached[start.x][start.y] = false;
-    }
-
-    void add(const Cells& cells, set< pair< int, Point > >& q,
-            const Point& cur, int d, const Point& p) {
-        if (p.isCorrect()
-                && cells[p.x][p.y] == FREE
-                && !reached[p.x][p.y]
-                && d < dist[p.x][p.y]) {
-            dist[p.x][p.y] = d;
-            prev[p.x][p.y] = cur;
-            q.insert(make_pair(d, p));
-        }
     }
 
     Point find_reachable(Point p) {
