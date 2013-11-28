@@ -324,15 +324,30 @@ struct SlavaStrategy {
                     int heal = min(
                             game.getMedikitBonusHitpoints(),
                             mate.getMaximalHitpoints() - mate.getHitpoints());
-                    if (heal <= 0) {
-                        continue;
+                    if (heal > 0) {
+                        State new_state = state;
+                        new_state.mate_damage -= heal;
+                        new_state.has_medkit = false;
+                        if (action_number == 1) {
+                            cur_action = make_action(USE_MEDIKIT, mate);
+                        }
+                        maximize_score(action_number, points, new_state);
                     }
-                    State new_state = state;
-                    new_state.has_medkit = false;
-                    if (action_number == 1) {
-                        cur_action = make_action(USE_MEDIKIT, mate);
+                }
+
+                {
+                    int heal = min(
+                            game.getMedikitHealSelfBonusHitpoints(),
+                            self.getMaximalHitpoints() - self.getHitpoints());
+                    if (heal > 0) {
+                        State new_state = state;
+                        new_state.mate_damage -= heal;
+                        new_state.has_medkit = false;
+                        if (action_number == 1) {
+                            cur_action = make_action(USE_MEDIKIT, self);
+                        }
+                        maximize_score(action_number, points, new_state);
                     }
-                    maximize_score(action_number, points, new_state);
                 }
             }
         }
@@ -347,13 +362,28 @@ struct SlavaStrategy {
                     int heal = min(
                             game.getFieldMedicHealBonusHitpoints(),
                             mate.getMaximalHitpoints() - mate.getHitpoints());
-                    if (heal <= 0) {
-                        continue;
+                    if (heal > 0) {
+                        State new_state = state;
+                        new_state.mate_damage -= heal;
+                        if (action_number == 1) {
+                            cur_action = make_action(HEAL, mate);
+                        }
+                        maximize_score(action_number, points, new_state);
                     }
-                    if (action_number == 1) {
-                        cur_action = make_action(HEAL, mate);
+                }
+
+                {
+                    int heal = min(
+                            game.getFieldMedicHealSelfBonusHitpoints(),
+                            self.getMaximalHitpoints() - self.getHitpoints());
+                    if (heal > 0) {
+                        State new_state = state;
+                        new_state.mate_damage -= heal;
+                        if (action_number == 1) {
+                            cur_action = make_action(HEAL, self);
+                        }
+                        maximize_score(action_number, points, new_state);
                     }
-                    maximize_score(action_number, points, state);
                 }
             }
         }
