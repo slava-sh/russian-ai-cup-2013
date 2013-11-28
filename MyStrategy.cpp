@@ -189,47 +189,13 @@ struct SlavaStrategy {
                       + (-mates_dist)
                       + 30 * (-state.mate_damage)
                       + 20 * state.damage
-                      + 2 * state.has_medkit
-                      + 2 * state.has_field_ration
-                      + 2 * state.has_grenade;
+                      + 5 * state.has_medkit
+                      + 5 * state.has_field_ration
+                      + 5 * state.has_grenade;
 
             if (score > best_score) {
                 best_action = cur_action;
                 best_score = score;
-            }
-        }
-
-        {
-            int points = action_points - game.getStandingMoveCost();
-            if (points >= 0) {
-                for (auto& n : state.pos.neighs()) {
-                    if (cells[n.x][n.y] == FREE) {
-                        State new_state = state;
-                        new_state.pos = n;
-                        if (action_number == 1) {
-                            cur_action = make_action(MOVE, n);
-                        }
-                        maximize_score(action_number, points, new_state);
-                    }
-                }
-            }
-        }
-
-        {
-            int points = action_points - self.getShootCost();
-            if (points >= 0) {
-                for (auto& enemy : enemies) {
-                    if (world.isVisible(self.getShootingRange(),
-                                state.pos.x, state.pos.y, self.getStance(), // TODO: state.stance
-                                enemy.getX(), enemy.getY(), enemy.getStance())) {
-                        State new_state = state;
-                        new_state.damage += self.getStandingDamage();
-                        if (action_number == 1) {
-                            cur_action = make_action(SHOOT, enemy);
-                        }
-                        maximize_score(action_number, points, new_state);
-                    }
-                }
             }
         }
 
@@ -300,6 +266,56 @@ struct SlavaStrategy {
                         new_state.mate_damage -= heal;
                         if (action_number == 1) {
                             cur_action = make_action(HEAL, self);
+                        }
+                        maximize_score(action_number, points, new_state);
+                    }
+                }
+            }
+        }
+
+        {
+            int points = action_points - self.getShootCost();
+            if (points >= 0) {
+                for (auto& enemy : enemies) {
+                    if (world.isVisible(self.getShootingRange(),
+                                state.pos.x, state.pos.y, self.getStance(), // TODO: state.stance
+                                enemy.getX(), enemy.getY(), enemy.getStance())) {
+                        State new_state = state;
+                        new_state.damage += self.getStandingDamage();
+                        if (action_number == 1) {
+                            cur_action = make_action(SHOOT, enemy);
+                        }
+                        maximize_score(action_number, points, new_state);
+                    }
+                }
+            }
+        }
+
+        {
+            int points = action_points - game.getStandingMoveCost();
+            if (points >= 0) {
+                for (auto& n : state.pos.neighs()) {
+                    if (cells[n.x][n.y] == FREE) {
+                        State new_state = state;
+                        new_state.pos = n;
+                        if (action_number == 1) {
+                            cur_action = make_action(MOVE, n);
+                        }
+                        maximize_score(action_number, points, new_state);
+                    }
+                }
+            }
+        }
+
+        if (state.has_field_ration) {
+            int points = action_points - game.getStandingMoveCost();
+            if (points >= 0) {
+                for (auto& n : state.pos.neighs()) {
+                    if (cells[n.x][n.y] == FREE) {
+                        State new_state = state;
+                        new_state.pos = n;
+                        if (action_number == 1) {
+                            cur_action = make_action(MOVE, n);
                         }
                         maximize_score(action_number, points, new_state);
                     }
