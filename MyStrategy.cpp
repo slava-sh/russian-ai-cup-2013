@@ -69,6 +69,15 @@ int random(int bound) { // [0, bound)
     return rand() % bound;
 }
 
+template< class T >
+T& random_choice(vector< T >& ts) {
+    return ts[random(ts.size())];
+}
+
+bool one_in(int x) {
+    return random(x - 1) == 0;
+}
+
 Action make_action(ActionType action) {
     Action result;
     result.setAction(action);
@@ -135,27 +144,25 @@ struct SlavaStrategy {
         int mate_damage;
         int damage;
         Point pos;
+        TrooperStance stance;   // TODO: use stance
         bool has_medkit;
         bool has_field_ration;
         bool used_field_ration; // TODO: better method
-        bool has_grenade;
+        bool has_grenade;       // TODO: use grenades
     };
 
     Action run() {
-        if (move_index == 0 || min_distance(self, target) <= 5) {
-            if (!enemies.empty()) {
-                target = enemies.front();
-            }
-            else {
-                target = Point(random(sizeX), random(sizeY));
-            }
+        if (move_index == 0) {
+            target = self;
+        }
+        while (min_distance(self, target) <= 5) {
+            target = Point(random(sizeX), random(sizeY));
             log("new target: " << target);
         }
 
         int action_points = self.getActionPoints();
 
         logId(self.getType() << " (" << action_points << ") at " << Point(self));
-        logId("we see " << enemies.size() << " enemies");
 
         best_score = -inf;
         cur_action = make_action(END_TURN);
@@ -164,6 +171,7 @@ struct SlavaStrategy {
         state.mate_damage       = 0;
         state.damage            = 0;
         state.pos               = self;
+        state.stance            = STANDING;
         state.has_medkit        = self.isHoldingMedikit();
         state.has_field_ration  = self.isHoldingFieldRation();
         state.used_field_ration = false;
@@ -206,14 +214,24 @@ struct SlavaStrategy {
 
             int target_dist = min_distance(state.pos, target);
 
-            int score = 5 * (-target_dist)
-                      + (-mates_dist)
-                      + 2 * (-commander_dist)
-                      + 40 * (-state.mate_damage)
-                      + 30 * state.damage
-                      + 5 * state.has_medkit
-                      + 5 * state.has_field_ration
-                      + 5 * state.has_grenade;
+            int shooting_enemies = 0;
+            for (auto& enemy : enemies) {
+                if (world.isVisible(enemy.getShootingRange(),
+                            enemy.getX(), enemy.getY(), enemy.getStance(),
+                            state.pos.x, state.pos.y, state.stance)) {
+                    shooting_enemies += 1;
+                }
+            }
+
+            int score = 5  * target_dist            * (-1) * 3   // 30
+                      + 7  * mates_dist             * (-1) * 3   // 30
+                      + 5  * commander_dist         * (-1) * 3   // 30
+                      + 15 * state.has_medkit       * ( 1) * 100 // 1
+                      + 15 * state.has_field_ration * ( 1) * 100 // 1
+                      + 15 * state.has_grenade      * ( 1) * 100 // 1
+                      + 30 * shooting_enemies       * (-1) * 10  // 10
+                      + 30 * state.mate_damage      * (-1) * 1   // 100
+                      + 20 * state.damage           * ( 1) * 1;  // 100
 
             if (score > best_score) {
                 best_action = cur_action;
@@ -300,7 +318,7 @@ struct SlavaStrategy {
             if (points >= 0) {
                 for (auto& enemy : enemies) {
                     if (world.isVisible(self.getShootingRange(),
-                                state.pos.x, state.pos.y, self.getStance(), // TODO: state.stance
+                                state.pos.x, state.pos.y, state.stance,
                                 enemy.getX(), enemy.getY(), enemy.getStance())) {
                         State new_state = state;
                         new_state.damage += self.getStandingDamage();
@@ -346,8 +364,8 @@ struct SlavaStrategy {
 
     void floyd() {
         vector< Point > free_points;
-        for (int x = 0; x < sizeX; ++x) {
-            for (int y = 0; y < sizeY; ++y) {
+        for (int x = 0; x < sizeX; x += 1) {
+            for (int y = 0; y < sizeY; y += 1) {
                 if (world.getCells()[x][y] == FREE) {
                     free_points.push_back(Point(x, y));
                 }
