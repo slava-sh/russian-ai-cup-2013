@@ -71,6 +71,10 @@ struct Point {
     }
 };
 
+int random(int bound) { // [0, bound)
+    return rand() % bound;
+}
+
 Action make_action(ActionType action) {
     Action result;
     result.setAction(action);
@@ -90,7 +94,7 @@ Action make_action(ActionType action, const Point& p) {
 }
 
 Point target;
-int move_index;
+int move_index = -1;
 
 struct SlavaStrategy {
 
@@ -106,11 +110,9 @@ struct SlavaStrategy {
             const Game& game): self(self), world(world), game(game) {
 
         move_index += 1;
-        if (move_index == 1) {
+        if (move_index == 0) {
             sizeX = world.getWidth();
             sizeY = world.getHeight();
-
-            target = Point(sizeX / 2, sizeY / 2);
         }
 
         cells = world.getCells();
@@ -139,6 +141,16 @@ struct SlavaStrategy {
     };
 
     Action run() {
+        if (move_index % 128 == 0) {
+            if (!enemies.empty()) {
+                target = enemies.front();
+            }
+            else {
+                target = Point(random(sizeX), random(sizeY));
+            }
+            log("new target: " << target);
+        }
+
         int action_points = self.getActionPoints();
 
         logId(self.getType() << " (" << action_points << ") at " << Point(self));
