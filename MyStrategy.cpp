@@ -86,14 +86,17 @@ bool one_in(int x) {
     return random(x - 1) == 0;
 }
 
-struct Dijkstra {
+class Dijkstra {
+
     vector< vector< int   > > dist;
     vector< vector< Point > > prev;
     vector< vector< char  > > reached;
 
+public:
+
     Dijkstra(const Point& start, const Cells& cells):
-            dist(sizeX, vector< int   >(sizeY, inf)),
-            prev(sizeX, vector< Point >(sizeY)),
+            dist   (sizeX, vector< int   >(sizeY, inf)),
+            prev   (sizeX, vector< Point >(sizeY)),
             reached(sizeX, vector< char  >(sizeY, false)) {
         dist[start.x][start.y] = 0;
         set< pair< int, Point > > q;
@@ -122,7 +125,7 @@ struct Dijkstra {
         reached[start.x][start.y] = false;
     }
 
-    Point find_reachable(Point p) {
+    Point find_reachable(Point p) const {
         while (!reached[p.x][p.y]) {
             p.x += 1;
             if (p.x == sizeX) {
@@ -136,11 +139,23 @@ struct Dijkstra {
         return p;
     }
 
-    Point next(const Point& pos, Point target) {
+    Point next(const Point& pos, Point target) const {
         while (prev[target.x][target.y] != pos) {
             target = prev[target.x][target.y];
         }
         return target;
+    }
+
+    bool has_reached(const Point& p) const {
+        return reached[p.x][p.y];
+    }
+
+    Point get_prev(const Point& p) const {
+        return prev[p.x][p.y];
+    }
+
+    int get_dist(const Point& p) const {
+        return dist[p.x][p.y];
     }
 };
 
