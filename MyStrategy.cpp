@@ -187,8 +187,8 @@ struct SlavaStrategy {
 
             int score = 5 * (-target_dist)
                       + (-mates_dist)
-                      + 30 * (-state.mate_damage)
-                      + 20 * state.damage
+                      + 40 * (-state.mate_damage)
+                      + 30 * state.damage
                       + 5 * state.has_medkit
                       + 5 * state.has_field_ration
                       + 5 * state.has_grenade;
