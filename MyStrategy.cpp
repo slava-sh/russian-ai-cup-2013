@@ -137,6 +137,7 @@ struct SlavaStrategy {
         Point pos;
         bool has_medkit;
         bool has_field_ration;
+        bool used_field_ration; // TODO: better method
         bool has_grenade;
     };
 
@@ -160,12 +161,13 @@ struct SlavaStrategy {
         cur_action = make_action(END_TURN);
 
         State state;
-        state.mate_damage      = 0;
-        state.damage           = 0;
-        state.pos              = self;
-        state.has_medkit       = self.isHoldingMedikit();
-        state.has_field_ration = self.isHoldingFieldRation();
-        state.has_grenade      = self.isHoldingGrenade();
+        state.mate_damage       = 0;
+        state.damage            = 0;
+        state.pos               = self;
+        state.has_medkit        = self.isHoldingMedikit();
+        state.has_field_ration  = self.isHoldingFieldRation();
+        state.used_field_ration = false;
+        state.has_grenade       = self.isHoldingGrenade();
 
         maximize_score(0, action_points, state);
         logId("best_score = " << best_score);
@@ -181,7 +183,9 @@ struct SlavaStrategy {
                     state.has_medkit = true;
                 }
                 else if (bonus.getType() == FIELD_RATION) {
-                    state.has_field_ration = true;
+                    if (!state.used_field_ration) {
+                        state.has_field_ration = true;
+                    }
                 }
                 else if (bonus.getType() == GRENADE) {
                     state.has_grenade = true;
@@ -325,6 +329,7 @@ struct SlavaStrategy {
                 State new_state = state;
                 points += game.getFieldRationBonusActionPoints();
                 new_state.has_field_ration = false;
+                new_state.used_field_ration = true;
                 if (action_number == 1) {
                     cur_action = make_action(EAT_FIELD_RATION);
                 }
