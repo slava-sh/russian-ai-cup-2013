@@ -142,7 +142,7 @@ struct SlavaStrategy {
     };
 
     Action run() {
-        if (move_index % 128 == 0) {
+        if (move_index % 64 == 0) {
             if (!enemies.empty()) {
                 target = enemies.front();
             }
