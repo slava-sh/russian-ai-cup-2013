@@ -35,7 +35,7 @@ struct Point {
         return 0 <= x && x < sizeX && 0 <= y && y < sizeY;
     }
 
-    bool has_neigh(const Point &p) {
+    bool has_neigh(const Point &p) const {
         return p.isCorrect() && abs(x - p.x) + abs(y - p.y) == 1;
     }
 
@@ -46,6 +46,12 @@ struct Point {
         if (x + 1 < sizeX) { result.push_back(Point(x + 1, y)); }
         if (y + 1 < sizeY) { result.push_back(Point(x, y + 1)); }
         return result;
+    }
+
+    double distance_to(const Point& p) const {
+        int xRange = p.x - x;
+        int yRange = p.y - y;
+        return sqrt((double) (xRange * xRange + yRange * yRange));
     }
 
     friend bool operator==(const Point& a, const Point& b) {
@@ -202,6 +208,8 @@ struct SlavaStrategy {
         if (move_index == 1) {
             sizeX = world.getWidth();
             sizeY = world.getHeight();
+
+            target = Point(sizeX / 2, sizeY / 2);
         }
 
         cells = world.getCells();
@@ -230,34 +238,85 @@ struct SlavaStrategy {
 
         best_score = -inf;
         cur_action = make_action(END_TURN);
-        maximize_score(0, action_points, self_pos);
+        maximize_score(0, action_points, self_pos, self.isHoldingMedikit(), 0, 0);
         logId("best_score = " << best_score);
         return best_action;
     }
 
-    void maximize_score(int action_number, int action_points, const Point& pos) {
+    void maximize_score(int action_number, int action_points,
+            const Point& pos, bool has_medkit,
+            int mate_damage, int damage) {
         action_number += 1;
 
         {
-            double mates_dist = 0;
+            int mates_dist = 0;
             for (auto& mate : teammates) {
-                mates_dist += mate.getDistanceTo(pos.x, pos.y);
+                mates_dist += ceil(pos.distance_to(mate));
             }
 
-            int score = -mates_dist;
+            int target_dist = ceil(pos.distance_to(target));
+
+            int score = 5 * (-target_dist) + (-mates_dist) + 30 * (-mate_damage);
+
             if (score > best_score) {
                 best_action = cur_action;
                 best_score = score;
             }
         }
 
-        for (auto& n : pos.neighs()) {
-            int cost = game.getStandingMoveCost();
-            if (cells[n.x][n.y] == FREE && action_points >= cost) {
-                if (action_number == 1) {
-                    cur_action = make_action(MOVE, n);
+        int cost = game.getStandingMoveCost();
+        if (action_points >= cost) {
+            for (auto& n : pos.neighs()) {
+                if (cells[n.x][n.y] == FREE) {
+                    if (action_number == 1) {
+                        cur_action = make_action(MOVE, n);
+                    }
+                    maximize_score(action_number, action_points - cost, n, has_medkit, mate_damage, damage);
                 }
-                maximize_score(action_number, action_points - cost, n);
+            }
+        }
+
+        if (has_medkit) {
+            int cost = game.getMedikitUseCost();
+            if (action_points >= cost) {
+                for (auto& mate : teammates) {
+                    if (!pos.has_neigh(mate)) {
+                        continue;
+                    }
+                    int heal = min(
+                            game.getMedikitBonusHitpoints(),
+                            mate.getMaximalHitpoints() - mate.getHitpoints());
+                    if (heal <= 0) {
+                        continue;
+                    }
+                    if (action_number == 1) {
+                        cur_action = make_action(USE_MEDIKIT, mate);
+                    }
+                    maximize_score(action_number, action_points - cost, pos,
+                            false, mate_damage - heal, damage);
+                }
+            }
+        }
+
+        if (self.getType() == FIELD_MEDIC) {
+            int cost = game.getFieldMedicHealCost();
+            if (action_points >= cost) {
+                for (auto& mate : teammates) {
+                    if (!pos.has_neigh(mate)) {
+                        continue;
+                    }
+                    int heal = min(
+                            game.getFieldMedicHealBonusHitpoints(),
+                            mate.getMaximalHitpoints() - mate.getHitpoints());
+                    if (heal <= 0) {
+                        continue;
+                    }
+                    if (action_number == 1) {
+                        cur_action = make_action(HEAL, mate);
+                    }
+                    maximize_score(action_number, action_points - cost, pos,
+                            false, mate_damage - heal, damage);
+                }
             }
         }
     }
