@@ -75,15 +75,6 @@ int random(int bound) { // [0, bound)
     return rand() % bound;
 }
 
-template< class T >
-T& random_choice(vector< T >& ts) {
-    return ts[random(ts.size())];
-}
-
-bool one_in(int x) {
-    return random(x - 1) == 0;
-}
-
 Action make_action(ActionType action) {
     Action result;
     result.setAction(action);
@@ -231,15 +222,25 @@ struct SlavaStrategy {
                 }
             }
 
-            int score = 5  * target_dist            * (-1)  // 3
-                      + 1  * mates_dist             * (-1)  // 3
-                      + 10 * close_to_commander     * ( 1)  // 1
-                      + 10 * state.has_medkit       * ( 1)  // 1
-                      + 10 * state.has_field_ration * ( 1)  // 1
-                      + 10 * state.has_grenade      * ( 1)  // 1
-                      + 50 * shooting_enemies       * (-1)  // 1
-                      + 40 * state.mate_damage      * (-1)  // 10
-                      + 30 * state.damage           * ( 1); // 10
+            // int score = 5  * target_dist            * (-1)  // 3
+            //           + 2  * mates_dist             * (-1)  // 3
+            //           + 8  * close_to_commander     * ( 1)  // 1
+            //           + 10 * state.has_medkit       * ( 1)  // 1
+            //           + 10 * state.has_field_ration * ( 1)  // 1
+            //           + 10 * state.has_grenade      * ( 1)  // 1
+            //           + 50 * shooting_enemies       * (-1)  // 1
+            //           + 40 * state.mate_damage      * (-1)  // 10
+            //           + 30 * state.damage           * ( 1); // 10
+
+            int score = 4  * target_dist            * (-1)
+                      + 2  * mates_dist             * (-1)
+                      + 0  * close_to_commander     * ( 1)
+                      + 8  * state.has_medkit       * ( 1)
+                      + 8  * state.has_field_ration * ( 1)
+                      + 8  * state.has_grenade      * ( 1)
+                      + 1000  * shooting_enemies       * (-1)
+                      + 60 * state.mate_damage      * (-1)
+                      + 45 * state.damage           * ( 1);
 
             if (score > best_score) {
                 best_action = cur_action;
