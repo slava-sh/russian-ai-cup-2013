@@ -248,6 +248,14 @@ struct SlavaStrategy {
             int mate_damage, int damage) {
         action_number += 1;
 
+        for (auto& bonus : world.getBonuses()) {
+            if (pos == bonus) {
+                if (bonus.getType() == MEDIKIT) {
+                    has_medkit = true;
+                }
+            }
+        }
+
         {
             int mates_dist = 0;
             for (auto& mate : teammates) {
@@ -256,7 +264,10 @@ struct SlavaStrategy {
 
             int target_dist = ceil(pos.distance_to(target));
 
-            int score = 5 * (-target_dist) + (-mates_dist) + 30 * (-mate_damage);
+            int score = 5 * (-target_dist)
+                      + (-mates_dist)
+                      + 30 * (-mate_damage)
+                      + 2 * has_medkit;
 
             if (score > best_score) {
                 best_action = cur_action;
