@@ -48,12 +48,6 @@ struct Point {
         return result;
     }
 
-    double distance_to(const Point& p) const {
-        int xRange = p.x - x;
-        int yRange = p.y - y;
-        return sqrt((double) (xRange * xRange + yRange * yRange));
-    }
-
     friend bool operator==(const Point& a, const Point& b) {
         return a.x == b.x && a.y == b.y;
     }
@@ -95,6 +89,11 @@ Action make_action(ActionType action, const Point& p) {
 
 Point target;
 int move_index = -1;
+vector< vector< vector< vector< int > > > > floyd_dist;
+
+int min_distance(const Point& a, const Point& b) {
+    return floyd_dist[a.x][a.y][b.x][b.y];
+}
 
 struct SlavaStrategy {
 
@@ -113,6 +112,7 @@ struct SlavaStrategy {
         if (move_index == 0) {
             sizeX = world.getWidth();
             sizeY = world.getHeight();
+            floyd();
         }
 
         cells = world.getCells();
@@ -194,21 +194,21 @@ struct SlavaStrategy {
         }
 
         {
-            int commander_dist = inf;
+            int commander_dist = 0;
             int mates_dist = 0;
             for (auto& mate : teammates) {
-                int dist = ceil(state.pos.distance_to(mate));
+                int dist = min_distance(state.pos, mate);
                 mates_dist += dist;
                 if (mate.getType() == COMMANDER) {
                     commander_dist = dist;
                 }
             }
 
-            int target_dist = ceil(state.pos.distance_to(target));
+            int target_dist = min_distance(state.pos, target);
 
             int score = 5 * (-target_dist)
                       + (-mates_dist)
-                      + 3 * (-commander_dist)
+                      + 2 * (-commander_dist)
                       + 40 * (-state.mate_damage)
                       + 30 * state.damage
                       + 5 * state.has_medkit
@@ -342,6 +342,43 @@ struct SlavaStrategy {
                 maximize_score(action_number, points, new_state);
             }
         }
+    }
+
+    void floyd() {
+        vector< Point > free_points;
+        for (int x = 0; x < sizeX; ++x) {
+            for (int y = 0; y < sizeY; ++y) {
+                if (world.getCells()[x][y] == FREE) {
+                    free_points.push_back(Point(x, y));
+                }
+            }
+        }
+
+        floyd_dist.resize(sizeX, vector< vector< vector< int > > >(sizeY,
+                    vector< vector< int > >(sizeX, vector< int >(sizeY, inf))));
+#define at2(t, p, q) (t[p.x][p.y][q.x][q.y])
+        for (auto& p : free_points) {
+            for (auto& n : p.neighs()) {
+                if (world.getCells()[n.x][n.y] != FREE) {
+                    continue;
+                }
+                at2(floyd_dist, p, n) = 1;
+            }
+        }
+        for (auto& k : free_points) {
+            for (auto& i : free_points) {
+                if (at2(floyd_dist, i, k) == inf) {
+                    continue;
+                }
+                for (auto& j : free_points) {
+                    if (at2(floyd_dist, k, j) == inf) {
+                        continue;
+                    }
+                    at2(floyd_dist, i, j) = min(at2(floyd_dist, i, j), at2(floyd_dist, i, k) + at2(floyd_dist, k, j));
+                }
+            }
+        }
+#undef at2
     }
 };
 
