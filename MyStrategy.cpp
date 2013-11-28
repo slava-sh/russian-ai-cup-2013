@@ -260,7 +260,7 @@ struct SlavaStrategy {
         return best_action;
     }
 
-    void maximize_score(int action_number, int action_points, State state) {
+    void maximize_score(int action_number, const int action_points, State state) {
         action_number += 1;
 
         for (auto& bonus : world.getBonuses()) {
@@ -288,6 +288,7 @@ struct SlavaStrategy {
             int score = 5 * (-target_dist)
                       + (-mates_dist)
                       + 30 * (-state.mate_damage)
+                      + 20 * state.damage
                       + 2 * state.has_medkit
                       + 2 * state.has_field_ration
                       + 2 * state.has_grenade;
@@ -307,6 +308,24 @@ struct SlavaStrategy {
                         new_state.pos = n;
                         if (action_number == 1) {
                             cur_action = make_action(MOVE, n);
+                        }
+                        maximize_score(action_number, points, new_state);
+                    }
+                }
+            }
+        }
+
+        {
+            int points = action_points - self.getShootCost();
+            if (points >= 0) {
+                for (auto& enemy : enemies) {
+                    if (world.isVisible(self.getShootingRange(),
+                                state.pos.x, state.pos.y, self.getStance(), // TODO: state.stance
+                                enemy.getX(), enemy.getY(), enemy.getStance())) {
+                        State new_state = state;
+                        new_state.damage += self.getStandingDamage();
+                        if (action_number == 1) {
+                            cur_action = make_action(SHOOT, enemy);
                         }
                         maximize_score(action_number, points, new_state);
                     }
