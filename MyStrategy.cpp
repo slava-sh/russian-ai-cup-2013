@@ -142,7 +142,7 @@ struct SlavaStrategy {
     };
 
     Action run() {
-        if (move_index % 64 == 0) {
+        if (move_index == 0 || min_distance(self, target) <= 5) {
             if (!enemies.empty()) {
                 target = enemies.front();
             }
