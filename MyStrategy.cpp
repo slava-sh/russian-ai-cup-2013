@@ -161,7 +161,8 @@ struct SlavaStrategy {
         if (move_index == 0) {
             target = self;
         }
-        while (min_distance(self, target) <= 5) {
+        while (min_distance(self, target) <= 5 ||
+                min_distance(self, target) == inf) {
             target = Point(random(sizeX), random(sizeY));
             log("new target: " << target);
         }
