@@ -71,28 +71,6 @@ struct Point {
     }
 };
 
-int random(int bound) { // [0, bound)
-    return rand() % bound;
-}
-
-int random(int a, int b) { // [a, b)
-    return a + random(b - a);
-}
-
-template< class T >
-const T& random_choice(const vector< T >& ts) {
-    return ts[random(ts.size())];
-}
-
-template< class T >
-T& random_choice(vector< T >& ts) {
-    return ts[random(ts.size())];
-}
-
-bool one_in(int x) {
-    return random(x - 1) == 0;
-}
-
 Action make_action(ActionType action) {
     Action result;
     result.setAction(action);
@@ -111,81 +89,6 @@ Action make_action(ActionType action, const Point& p) {
     return make_action(action, p.x, p.y);
 }
 
-class Dijkstra {
-
-    vector< vector< int   > > dist;
-    vector< vector< Point > > prev;
-    vector< vector< char  > > reached;
-
-public:
-
-    Dijkstra() {}
-
-    Dijkstra(const Point& start, const Cells& cells):
-            dist   (sizeX, vector< int   >(sizeY, inf)),
-            prev   (sizeX, vector< Point >(sizeY)),
-            reached(sizeX, vector< char  >(sizeY, false)) {
-        dist[start.x][start.y] = 0;
-        set< pair< int, Point > > q;
-        q.insert(make_pair(0, start));
-        while (!q.empty()) {
-            auto it = q.begin();
-            int d   = it->first;
-            Point p = it->second;
-            q.erase(it);
-            if (reached[p.x][p.y]) {
-                continue;
-            }
-            reached[p.x][p.y] = true;
-            d += 1;
-            for (auto& n : p.neighs()) {
-                if (cells[n.x][n.y] == FREE
-                        && !reached[n.x][n.y]
-                        && d < dist[n.x][n.y]) {
-                    dist[n.x][n.y] = d;
-                    prev[n.x][n.y] = p;
-                    q.insert(make_pair(d, n));
-                }
-            }
-        }
-        dist[start.x][start.y] = inf;
-        reached[start.x][start.y] = false;
-    }
-
-    Point find_reachable(Point p) const {
-        while (!reached[p.x][p.y]) {
-            p.x += 1;
-            if (p.x == sizeX) {
-                p.x = 0;
-                p.y += 1;
-                if (p.y == sizeY) {
-                    p.y = 0;
-                }
-            }
-        }
-        return p;
-    }
-
-    Point next(const Point& pos, Point target) const {
-        while (prev[target.x][target.y] != pos) {
-            target = prev[target.x][target.y];
-        }
-        return target;
-    }
-
-    bool has_reached(const Point& p) const {
-        return reached[p.x][p.y];
-    }
-
-    Point get_prev(const Point& p) const {
-        return prev[p.x][p.y];
-    }
-
-    int get_dist(const Point& p) const {
-        return dist[p.x][p.y];
-    }
-};
-
 Point target;
 int move_index;
 
@@ -198,7 +101,6 @@ struct SlavaStrategy {
     Cells cells;
     vector< Trooper > teammates;
     vector< Trooper > enemies;
-    Dijkstra dijkstra;
 
     SlavaStrategy(const Trooper& self, const World& world,
             const Game& game): self(self), world(world), game(game) {
@@ -221,8 +123,6 @@ struct SlavaStrategy {
                 enemies.push_back(trooper);
             }
         }
-
-        dijkstra = Dijkstra(self, cells);
     }
 
     Action best_action;
