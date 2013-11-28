@@ -48,6 +48,12 @@ struct Point {
         return result;
     }
 
+    double distance_to(const Point& p) const {
+        int xRange = p.x - x;
+        int yRange = p.y - y;
+        return sqrt((double) (xRange * xRange + yRange * yRange));
+    }
+
     friend bool operator==(const Point& a, const Point& b) {
         return a.x == b.x && a.y == b.y;
     }
@@ -202,13 +208,14 @@ struct SlavaStrategy {
         }
 
         {
-            int commander_dist = 0;
+            bool close_to_commander = false;
             int mates_dist = 0;
             for (auto& mate : teammates) {
                 int dist = min_distance(state.pos, mate);
                 mates_dist += dist;
-                if (mate.getType() == COMMANDER) {
-                    commander_dist = dist;
+                if (mate.getType() == COMMANDER &&
+                        state.pos.distance_to(mate) < game.getCommanderAuraRange()) {
+                    close_to_commander = true;
                 }
             }
 
@@ -223,15 +230,15 @@ struct SlavaStrategy {
                 }
             }
 
-            int score = 5  * target_dist            * (-1) * 3   // 30
-                      + 7  * mates_dist             * (-1) * 3   // 30
-                      + 5  * commander_dist         * (-1) * 3   // 30
-                      + 15 * state.has_medkit       * ( 1) * 100 // 1
-                      + 15 * state.has_field_ration * ( 1) * 100 // 1
-                      + 15 * state.has_grenade      * ( 1) * 100 // 1
-                      + 30 * shooting_enemies       * (-1) * 10  // 10
-                      + 30 * state.mate_damage      * (-1) * 1   // 100
-                      + 20 * state.damage           * ( 1) * 1;  // 100
+            int score = 5  * target_dist            * (-1)  // 3
+                      + 1  * mates_dist             * (-1)  // 3
+                      + 10 * close_to_commander     * ( 1)  // 1
+                      + 10 * state.has_medkit       * ( 1)  // 1
+                      + 10 * state.has_field_ration * ( 1)  // 1
+                      + 10 * state.has_grenade      * ( 1)  // 1
+                      + 50 * shooting_enemies       * (-1)  // 1
+                      + 40 * state.mate_damage      * (-1)  // 10
+                      + 30 * state.damage           * ( 1); // 10
 
             if (score > best_score) {
                 best_action = cur_action;
