@@ -86,6 +86,20 @@ bool one_in(int x) {
     return random(x - 1) == 0;
 }
 
+Move make_move(ActionType action) {
+    Move result;
+    result.setAction(action);
+    return result;
+}
+
+Move make_move(ActionType action, int x, int y) {
+    Move result;
+    result.setAction(action);
+    result.setX(x);
+    result.setY(y);
+    return result;
+}
+
 class Dijkstra {
 
     vector< vector< int   > > dist;
@@ -93,6 +107,8 @@ class Dijkstra {
     vector< vector< char  > > reached;
 
 public:
+
+    Dijkstra() {}
 
     Dijkstra(const Point& start, const Cells& cells):
             dist   (sizeX, vector< int   >(sizeY, inf)),
@@ -159,32 +175,32 @@ public:
     }
 };
 
+Point target;
+int move_index;
+
 struct SlavaStrategy {
 
-    Point target;
-    int move_index = 0;
+    const Trooper& self;
+    const World& world;
+    const Game& game;
 
-    void move(const Trooper& self,
-            const World& world, const Game& game, Move& action) {
+    const Point pos;
+    Cells cells;
+    vector< Trooper > teammates;
+    vector< Trooper > enemies;
+    Dijkstra dijkstra;
+
+    SlavaStrategy(const Trooper& self, const World& world,
+            const Game& game): self(self), world(world), game(game) {
+
         move_index += 1;
-
         if (move_index == 1) {
             sizeX = world.getWidth();
             sizeY = world.getHeight();
         }
 
-        Point pos(self);
-        int action_points = self.getActionPoints();
-
-        logId("move number " << move_index);
-        logId(self.getType() << " (" << action_points << ") at " << pos);
-
-        auto& bonuses = world.getBonuses();
-        auto& troopers = world.getTroopers();
-        auto cells = world.getCells();
-        vector< Trooper > teammates;
-        vector< Trooper > enemies;
-        for (auto& trooper : troopers) {
+        cells = world.getCells();
+        for (auto& trooper : world.getTroopers()) {
             if (trooper.isTeammate()) {
                 cells[trooper.getX()][trooper.getY()] = HIGH_COVER;
                 teammates.push_back(trooper);
@@ -193,17 +209,34 @@ struct SlavaStrategy {
                 enemies.push_back(trooper);
             }
         }
+
+        dijkstra = Dijkstra(pos, cells);
+    }
+
+    Move run() {
+        int action_points = self.getActionPoints();
+
+        logId("move number " << move_index);
+        logId(self.getType() << " (" << action_points << ") at " << pos);
         logId("we see " << enemies.size() << " enemies");
 
-        Dijkstra dijkstra(pos, cells);
+        return go(action_points);
+    }
+
+    Move go(int action_points) {
+        if (action_points >= game.getStandingMoveCost()) {
+            for (auto& n : pos.neighs()) {
+                return make_move(MOVE, n.x, n.y);
+            }
+        }
+        return make_move(END_TURN);
     }
 };
 
-MyStrategy::MyStrategy() {
-}
+MyStrategy::MyStrategy() {}
 
 void MyStrategy::move(const Trooper& self,
         const World& world, const Game& game, Move& action) {
-    static SlavaStrategy strategy;
-    strategy.move(self, world, game, action);
+    SlavaStrategy strategy(self, world, game);
+    action = strategy.run();
 }
