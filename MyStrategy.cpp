@@ -166,8 +166,8 @@ public:
         return p;
     }
 
-    Point next(const Point& self_pos, Point target) const {
-        while (prev[target.x][target.y] != self_pos) {
+    Point next(const Point& pos, Point target) const {
+        while (prev[target.x][target.y] != pos) {
             target = prev[target.x][target.y];
         }
         return target;
@@ -195,14 +195,13 @@ struct SlavaStrategy {
     const World& world;
     const Game& game;
 
-    const Point self_pos;
     Cells cells;
     vector< Trooper > teammates;
     vector< Trooper > enemies;
     Dijkstra dijkstra;
 
     SlavaStrategy(const Trooper& self, const World& world,
-            const Game& game): self(self), world(world), game(game), self_pos(self) {
+            const Game& game): self(self), world(world), game(game) {
 
         move_index += 1;
         if (move_index == 1) {
@@ -223,35 +222,57 @@ struct SlavaStrategy {
             }
         }
 
-        dijkstra = Dijkstra(self_pos, cells);
+        dijkstra = Dijkstra(self, cells);
     }
 
     Action best_action;
     int best_score;
     Action cur_action;
 
+    struct State {
+        int mate_damage;
+        int damage;
+        Point pos;
+        bool has_medkit;
+        bool has_field_ration;
+        bool has_grenade;
+    };
+
     Action run() {
         int action_points = self.getActionPoints();
 
-        logId(self.getType() << " (" << action_points << ") at " << self_pos);
+        logId(self.getType() << " (" << action_points << ") at " << Point(self));
         logId("we see " << enemies.size() << " enemies");
 
         best_score = -inf;
         cur_action = make_action(END_TURN);
-        maximize_score(0, action_points, self_pos, self.isHoldingMedikit(), 0, 0);
+
+        State state;
+        state.mate_damage      = 0;
+        state.damage           = 0;
+        state.pos              = self;
+        state.has_medkit       = self.isHoldingMedikit();
+        state.has_field_ration = self.isHoldingFieldRation();
+        state.has_grenade      = self.isHoldingGrenade();
+
+        maximize_score(0, action_points, state);
         logId("best_score = " << best_score);
         return best_action;
     }
 
-    void maximize_score(int action_number, int action_points,
-            const Point& pos, bool has_medkit,
-            int mate_damage, int damage) {
+    void maximize_score(int action_number, int action_points, State state) {
         action_number += 1;
 
         for (auto& bonus : world.getBonuses()) {
-            if (pos == bonus) {
+            if (state.pos == bonus) {
                 if (bonus.getType() == MEDIKIT) {
-                    has_medkit = true;
+                    state.has_medkit = true;
+                }
+                else if (bonus.getType() == FIELD_RATION) {
+                    state.has_field_ration = true;
+                }
+                else if (bonus.getType() == GRENADE) {
+                    state.has_grenade = true;
                 }
             }
         }
@@ -259,15 +280,17 @@ struct SlavaStrategy {
         {
             int mates_dist = 0;
             for (auto& mate : teammates) {
-                mates_dist += ceil(pos.distance_to(mate));
+                mates_dist += ceil(state.pos.distance_to(mate));
             }
 
-            int target_dist = ceil(pos.distance_to(target));
+            int target_dist = ceil(state.pos.distance_to(target));
 
             int score = 5 * (-target_dist)
                       + (-mates_dist)
-                      + 30 * (-mate_damage)
-                      + 2 * has_medkit;
+                      + 30 * (-state.mate_damage)
+                      + 2 * state.has_medkit
+                      + 2 * state.has_field_ration
+                      + 2 * state.has_grenade;
 
             if (score > best_score) {
                 best_action = cur_action;
@@ -275,23 +298,27 @@ struct SlavaStrategy {
             }
         }
 
-        int cost = game.getStandingMoveCost();
-        if (action_points >= cost) {
-            for (auto& n : pos.neighs()) {
-                if (cells[n.x][n.y] == FREE) {
-                    if (action_number == 1) {
-                        cur_action = make_action(MOVE, n);
+        {
+            int points = action_points - game.getStandingMoveCost();
+            if (points >= 0) {
+                for (auto& n : state.pos.neighs()) {
+                    if (cells[n.x][n.y] == FREE) {
+                        State new_state = state;
+                        new_state.pos = n;
+                        if (action_number == 1) {
+                            cur_action = make_action(MOVE, n);
+                        }
+                        maximize_score(action_number, points, new_state);
                     }
-                    maximize_score(action_number, action_points - cost, n, has_medkit, mate_damage, damage);
                 }
             }
         }
 
-        if (has_medkit) {
-            int cost = game.getMedikitUseCost();
-            if (action_points >= cost) {
+        if (state.has_medkit) {
+            int points = action_points - game.getMedikitUseCost();
+            if (points >= 0) {
                 for (auto& mate : teammates) {
-                    if (!pos.has_neigh(mate)) {
+                    if (!state.pos.has_neigh(mate)) {
                         continue;
                     }
                     int heal = min(
@@ -300,20 +327,21 @@ struct SlavaStrategy {
                     if (heal <= 0) {
                         continue;
                     }
+                    State new_state = state;
+                    new_state.has_medkit = false;
                     if (action_number == 1) {
                         cur_action = make_action(USE_MEDIKIT, mate);
                     }
-                    maximize_score(action_number, action_points - cost, pos,
-                            false, mate_damage - heal, damage);
+                    maximize_score(action_number, points, new_state);
                 }
             }
         }
 
         if (self.getType() == FIELD_MEDIC) {
-            int cost = game.getFieldMedicHealCost();
-            if (action_points >= cost) {
+            int points = action_points - game.getFieldMedicHealCost();
+            if (points >= 0) {
                 for (auto& mate : teammates) {
-                    if (!pos.has_neigh(mate)) {
+                    if (!state.pos.has_neigh(mate)) {
                         continue;
                     }
                     int heal = min(
@@ -325,8 +353,7 @@ struct SlavaStrategy {
                     if (action_number == 1) {
                         cur_action = make_action(HEAL, mate);
                     }
-                    maximize_score(action_number, action_points - cost, pos,
-                            false, mate_damage - heal, damage);
+                    maximize_score(action_number, points, state);
                 }
             }
         }
