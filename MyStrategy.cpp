@@ -320,6 +320,28 @@ struct SlavaStrategy {
         }
 
         {
+            int points = action_points - game.getStanceChangeCost();
+            if (points >= 0) {
+                if (state.stance != STANDING) {
+                    State new_state = state;
+                    new_state.stance = state.stance == PRONE ? KNEELING : STANDING;
+                    if (action_number == 1) {
+                        cur_action = make_action(RAISE_STANCE);
+                    }
+                    maximize_score(action_number, points, new_state);
+                }
+                if (state.stance != PRONE) {
+                    State new_state = state;
+                    new_state.stance = state.stance == STANDING ? KNEELING : PRONE;
+                    if (action_number == 1) {
+                        cur_action = make_action(LOWER_STANCE);
+                    }
+                    maximize_score(action_number, points, new_state);
+                }
+            }
+        }
+
+        {
             int points = action_points - self.getShootCost();
             if (points >= 0) {
                 for (auto& enemy : enemies) {
@@ -327,7 +349,7 @@ struct SlavaStrategy {
                                 state.pos.x, state.pos.y, state.stance,
                                 enemy.getX(), enemy.getY(), enemy.getStance())) {
                         State new_state = state;
-                        new_state.damage += self.getStandingDamage();
+                        new_state.damage += self.getDamage(state.stance);
                         if (action_number == 1) {
                             cur_action = make_action(SHOOT, enemy);
                         }
@@ -338,7 +360,11 @@ struct SlavaStrategy {
         }
 
         {
-            int points = action_points - game.getStandingMoveCost();
+            int cost =
+                state.stance == STANDING ? game.getStandingMoveCost() :
+                (state.stance == KNEELING ? game.getKneelingMoveCost() :
+                 game.getProneMoveCost());
+            int points = action_points - cost;
             if (points >= 0) {
                 for (auto& n : state.pos.neighs()) {
                     if (cells[n.x][n.y] == FREE) {
