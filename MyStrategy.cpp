@@ -287,10 +287,6 @@ struct SlavaStrategy {
             }
         }
 
-        if (action_number == 7) {
-            return;
-        }
-
         if (state.has_medkit) {
             int points = action_points - game.getMedikitUseCost();
             if (points >= 0) {
