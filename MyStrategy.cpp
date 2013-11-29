@@ -160,7 +160,7 @@ struct SlavaStrategy {
 
         int action_points = self.getActionPoints();
 
-        logId(self.getType() << " (" << action_points << ") at " << Point(self));
+        logId(self.getType() << " " << self.getStance() << " (" << action_points << ") at " << Point(self));
 
         best_score = -inf;
         cur_action = make_action(END_TURN);
@@ -169,7 +169,7 @@ struct SlavaStrategy {
         state.mate_damage       = 0;
         state.damage            = 0;
         state.pos               = self;
-        state.stance            = STANDING;
+        state.stance            = self.getStance();
         state.has_medkit        = self.isHoldingMedikit();
         state.has_field_ration  = self.isHoldingFieldRation();
         state.used_field_ration = false;
