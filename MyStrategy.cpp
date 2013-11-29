@@ -325,6 +325,50 @@ struct SlavaStrategy {
             }
         }
 
+        if (state.has_grenade) {
+            int points = action_points - game.getGrenadeThrowCost();
+            if (points >= 0) {
+                for (auto& enemy : enemies) {
+                    Point e(enemy);
+                    if (state.pos.distance_to(e) <= game.getGrenadeThrowRange()) {
+                        State new_state = state;
+                        {
+                            int damage = game.getGrenadeDirectDamage();
+                            new_state.damage += game.getGrenadeDirectDamage();
+                            if (damage >= enemy.getHitpoints()) {
+                                new_state.kills += 1;
+                            }
+                        }
+                        for (auto& n : enemies) {
+                            if (e.has_neigh(n)) {
+                                int damage = game.getGrenadeCollateralDamage();
+                                new_state.damage += damage;
+                                if (damage >= n.getHitpoints()) {
+                                    new_state.kills += 1;
+                                }
+                            }
+                        }
+                        for (auto& n : teammates) {
+                            if (e.has_neigh(n)) {
+                                int damage = game.getGrenadeCollateralDamage();
+                                new_state.mate_damage += damage;
+                                if (damage >= n.getHitpoints()) {
+                                    new_state.kills -= 2;
+                                }
+                            }
+                        }
+                        new_state.has_grenade = false;
+                        new_state.used_grenade = true;
+                        if (action_number == 1) {
+                            cur_action = make_action(THROW_GRENADE, e);
+                        }
+                        maximize_score(action_number, points, new_state);
+                    }
+                }
+            }
+        }
+
+
         if (self.getType() == FIELD_MEDIC) {
             int points = action_points - game.getFieldMedicHealCost();
             if (points >= 0) {
@@ -357,28 +401,6 @@ struct SlavaStrategy {
                         }
                         maximize_score(action_number, points, new_state);
                     }
-                }
-            }
-        }
-
-        {
-            int points = action_points - game.getStanceChangeCost();
-            if (points >= 0) {
-                if (state.stance != STANDING) {
-                    State new_state = state;
-                    new_state.stance = state.stance == PRONE ? KNEELING : STANDING;
-                    if (action_number == 1) {
-                        cur_action = make_action(RAISE_STANCE);
-                    }
-                    maximize_score(action_number, points, new_state);
-                }
-                if (state.stance != PRONE) {
-                    State new_state = state;
-                    new_state.stance = state.stance == STANDING ? KNEELING : PRONE;
-                    if (action_number == 1) {
-                        cur_action = make_action(LOWER_STANCE);
-                    }
-                    maximize_score(action_number, points, new_state);
                 }
             }
         }
@@ -425,45 +447,24 @@ struct SlavaStrategy {
             }
         }
 
-        if (state.has_grenade) {
-            int points = action_points - game.getGrenadeThrowCost();
+        {
+            int points = action_points - game.getStanceChangeCost();
             if (points >= 0) {
-                for (auto& enemy : enemies) {
-                    Point e(enemy);
-                    if (state.pos.distance_to(e) <= game.getGrenadeThrowRange()) {
-                        State new_state = state;
-                        {
-                            int damage = game.getGrenadeDirectDamage();
-                            new_state.damage += game.getGrenadeDirectDamage();
-                            if (damage >= enemy.getHitpoints()) {
-                                new_state.kills += 1;
-                            }
-                        }
-                        for (auto& n : enemies) {
-                            if (e.has_neigh(n)) {
-                                int damage = game.getGrenadeCollateralDamage();
-                                new_state.damage += damage;
-                                if (damage >= n.getHitpoints()) {
-                                    new_state.kills += 1;
-                                }
-                            }
-                        }
-                        for (auto& n : teammates) {
-                            if (e.has_neigh(n)) {
-                                int damage = game.getGrenadeCollateralDamage();
-                                new_state.mate_damage += damage;
-                                if (damage >= n.getHitpoints()) {
-                                    new_state.kills -= 2;
-                                }
-                            }
-                        }
-                        new_state.has_grenade = false;
-                        new_state.used_grenade = true;
-                        if (action_number == 1) {
-                            cur_action = make_action(THROW_GRENADE, e);
-                        }
-                        maximize_score(action_number, points, new_state);
+                if (state.stance != STANDING) {
+                    State new_state = state;
+                    new_state.stance = state.stance == PRONE ? KNEELING : STANDING;
+                    if (action_number == 1) {
+                        cur_action = make_action(RAISE_STANCE);
                     }
+                    maximize_score(action_number, points, new_state);
+                }
+                if (state.stance != PRONE) {
+                    State new_state = state;
+                    new_state.stance = state.stance == STANDING ? KNEELING : PRONE;
+                    if (action_number == 1) {
+                        cur_action = make_action(LOWER_STANCE);
+                    }
+                    maximize_score(action_number, points, new_state);
                 }
             }
         }
