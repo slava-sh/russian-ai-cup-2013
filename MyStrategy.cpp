@@ -200,8 +200,8 @@ struct SlavaStrategy {
         }
 
         {
-            bool close_to_commander = false;
             int mates_dist = 0;
+            bool close_to_commander = false;
             for (auto& mate : teammates) {
                 int dist = min_distance(state.pos, mate);
                 mates_dist += dist;
@@ -224,21 +224,26 @@ struct SlavaStrategy {
 
             int target_dist = min_distance(state.pos, target);
 
-            int score = 12 * target_dist            * (-1)
-                      + 6  * mates_dist             * (-1)
-                      // + 12 * shooting_enemies           * (-1)
-                      // + 12 * enemies_dist           * ( 1)
-                      + 2  * close_to_commander     * ( 1)
-                      + 8  * state.has_medkit       * ( 1)
-                      + 8  * state.has_field_ration * ( 1)
-                      + 8  * state.has_grenade      * ( 1)
-                      + 60 * state.mate_damage      * (-1)
-                      + 45 * state.damage           * ( 1);
+            int score = 0;
+            score -= 10   * target_dist;
+            score -= 4    * mates_dist;
+            score -= 1000 * shooting_enemies;
+         // score += 12   * enemies_dist;
+            score += 100  * close_to_commander;
+            score += 8    * state.has_medkit;
+            score += 8    * state.has_field_ration;
+            score += 8    * state.has_grenade;
+            score -= 60   * state.mate_damage;
+            score += 45   * state.damage;
 
             if (score > best_score) {
                 best_action = cur_action;
                 best_score = score;
             }
+        }
+
+        if (action_number == 9) {
+            return;
         }
 
         if (state.has_medkit) {
