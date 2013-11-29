@@ -217,7 +217,7 @@ struct SlavaStrategy {
             int shooting_enemies = 0;
             for (auto& enemy : enemies) {
                 if (world.isVisible(enemy.getShootingRange(),
-                            enemy.getX(), enemy.getY(), enemy.getStance(),
+                            enemy.getX(), enemy.getY(), STANDING,
                             state.pos.x, state.pos.y, state.stance)) {
                     shooting_enemies += 1;
                 }
