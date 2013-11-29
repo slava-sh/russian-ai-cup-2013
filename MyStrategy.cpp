@@ -211,10 +211,10 @@ struct SlavaStrategy {
                 }
             }
 
-            int target_dist = min_distance(state.pos, target);
-
+            int enemies_dist = 0;
             int shooting_enemies = 0;
             for (auto& enemy : enemies) {
+                enemies_dist += min_distance(state.pos, enemy);
                 if (world.isVisible(enemy.getShootingRange(),
                             enemy.getX(), enemy.getY(), enemy.getStance(),
                             state.pos.x, state.pos.y, state.stance)) {
@@ -222,23 +222,16 @@ struct SlavaStrategy {
                 }
             }
 
-            // int score = 5  * target_dist            * (-1)  // 3
-            //           + 2  * mates_dist             * (-1)  // 3
-            //           + 8  * close_to_commander     * ( 1)  // 1
-            //           + 10 * state.has_medkit       * ( 1)  // 1
-            //           + 10 * state.has_field_ration * ( 1)  // 1
-            //           + 10 * state.has_grenade      * ( 1)  // 1
-            //           + 50 * shooting_enemies       * (-1)  // 1
-            //           + 40 * state.mate_damage      * (-1)  // 10
-            //           + 30 * state.damage           * ( 1); // 10
+            int target_dist = min_distance(state.pos, target);
 
-            int score = 4  * target_dist            * (-1)
-                      + 2  * mates_dist             * (-1)
-                      + 0  * close_to_commander     * ( 1)
+            int score = 12 * target_dist            * (-1)
+                      + 6  * mates_dist             * (-1)
+                      // + 12 * shooting_enemies           * (-1)
+                      // + 12 * enemies_dist           * ( 1)
+                      + 2  * close_to_commander     * ( 1)
                       + 8  * state.has_medkit       * ( 1)
                       + 8  * state.has_field_ration * ( 1)
                       + 8  * state.has_grenade      * ( 1)
-                      + 1000  * shooting_enemies       * (-1)
                       + 60 * state.mate_damage      * (-1)
                       + 45 * state.damage           * ( 1);
 
