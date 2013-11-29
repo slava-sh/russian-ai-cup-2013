@@ -200,7 +200,7 @@ struct SlavaStrategy {
     };
 
     Action run() {
-        if (move_index == 0) {
+        if (move_index % 128 == 0) {
             target = self;
         }
         while (min_distance(self, target) <= 5 ||
