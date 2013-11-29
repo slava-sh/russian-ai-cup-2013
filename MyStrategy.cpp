@@ -26,6 +26,43 @@ const int inf = 1e9;
 int sizeX;
 int sizeY;
 
+ostream& operator<<(ostream& out, const ActionType& action) {
+    switch (action) {
+        case END_TURN:                  return out << "END_TURN";
+        case MOVE:                      return out << "MOVE";
+        case SHOOT:                     return out << "SHOOT";
+        case RAISE_STANCE:              return out << "RAISE_STANCE";
+        case LOWER_STANCE:              return out << "LOWER_STANCE";
+        case THROW_GRENADE:             return out << "THROW_GRENADE";
+        case USE_MEDIKIT:               return out << "USE_MEDIKIT";
+        case EAT_FIELD_RATION:          return out << "EAT_FIELD_RATION";
+        case HEAL:                      return out << "HEAL";
+        case REQUEST_ENEMY_DISPOSITION: return out << "REQUEST_ENEMY_DISPOSITION";
+        default:                        return out << "UNKNOWN_ACTION";
+    };
+}
+
+ostream& operator<<(ostream& out, const TrooperType& type) {
+    switch (type) {
+        case COMMANDER:   return out << "COMMANDER";
+        case FIELD_MEDIC: return out << "FIELD_MEDIC";
+        case SOLDIER:     return out << "SOLDIER";
+        case SNIPER:      return out << "SNIPER";
+        case SCOUT:       return out << "SCOUT";
+        default:          return out << "UNKNOWN_TROOPER";
+    };
+}
+
+ostream& operator<<(ostream& out, const TrooperStance& stance) {
+    switch (stance) {
+        case PRONE:                  return out << "PRONE";
+        case KNEELING:               return out << "KNEELING";
+        case STANDING:               return out << "STANDING";
+        case _TROOPER_STANCE_COUNT_: return out << "_TROOPER_STANCE_COUNT_";
+        default:                     return out << "UNKNOWN_STANCE";
+    };
+}
+
 struct Point {
     int x, y;
 
