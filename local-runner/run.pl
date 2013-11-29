@@ -50,7 +50,7 @@ for (my $total = 1;; ++$total) {
         print "seed = $seed crash";
     }
 
-    printf "%d: %0.3f%% wins, %0.3f%% pluses\n", $total, 100 * $wins / $total, 100 * $pluses / $total;
+    printf "%d: %d %0.3f%% wins, %0.3f%% pluses\n", $total, $place, 100 * $wins / $total, 100 * $pluses / $total;
 }
 
 `rm result.txt run-once.properties`;
