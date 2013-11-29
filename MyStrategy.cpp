@@ -527,6 +527,7 @@ struct SlavaStrategy {
 };
 
 MyStrategy::MyStrategy() {
+    srand(32498);
 #ifdef SLAVA_DEBUG
     cerr.setf(ios_base::fixed);
     cerr.precision(3);
