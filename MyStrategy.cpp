@@ -146,6 +146,7 @@ struct SlavaStrategy {
         bool has_field_ration;
         bool used_field_ration; // TODO: better method
         bool has_grenade;       // TODO: use grenades
+        bool used_grenade;      // TODO: better method
     };
 
     Action run() {
@@ -174,6 +175,7 @@ struct SlavaStrategy {
         state.has_field_ration  = self.isHoldingFieldRation();
         state.used_field_ration = false;
         state.has_grenade       = self.isHoldingGrenade();
+        state.used_grenade      = false;
 
         maximize_score(0, action_points, state);
         logId("best_score = " << best_score);
@@ -194,7 +196,9 @@ struct SlavaStrategy {
                     }
                 }
                 else if (bonus.getType() == GRENADE) {
-                    state.has_grenade = true;
+                    if (!state.used_grenade) {
+                        state.has_grenade = true;
+                    }
                 }
             }
         }
@@ -205,7 +209,7 @@ struct SlavaStrategy {
             for (auto& mate : teammates) {
                 mates_dist += min_distance(state.pos, mate);
                 if (mate.getType() == COMMANDER &&
-                        state.pos.distance_to(mate) < game.getCommanderAuraRange()) {
+                        state.pos.distance_to(mate) <= game.getCommanderAuraRange()) {
                     close_to_commander = true;
                 }
             }
@@ -371,6 +375,35 @@ struct SlavaStrategy {
                         new_state.pos = n;
                         if (action_number == 1) {
                             cur_action = make_action(MOVE, n);
+                        }
+                        maximize_score(action_number, points, new_state);
+                    }
+                }
+            }
+        }
+
+        if (state.has_grenade) {
+            int points = action_points - game.getGrenadeThrowCost();
+            if (points >= 0) {
+                for (auto& enemy : enemies) {
+                    Point e(enemy);
+                    if (state.pos.distance_to(e) <= game.getGrenadeThrowRange()) {
+                        State new_state = state;
+                        new_state.damage += game.getGrenadeDirectDamage();
+                        for (auto& n : enemies) {
+                            if (e.has_neigh(n)) {
+                                new_state.damage += game.getGrenadeCollateralDamage();
+                            }
+                        }
+                        for (auto& n : teammates) {
+                            if (e.has_neigh(n)) {
+                                new_state.mate_damage += game.getGrenadeCollateralDamage();
+                            }
+                        }
+                        new_state.has_grenade = false;
+                        new_state.used_grenade = true;
+                        if (action_number == 1) {
+                            cur_action = make_action(THROW_GRENADE, e);
                         }
                         maximize_score(action_number, points, new_state);
                     }
