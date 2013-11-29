@@ -150,14 +150,24 @@ struct SlavaStrategy {
     vector< Trooper > teammates;
     vector< Trooper > enemies;
 
+    void init() {
+#ifdef SLAVA_DEBUG
+        cerr.setf(ios_base::fixed);
+        cerr.precision(3);
+#endif
+        srand(32498);
+
+        sizeX = world.getWidth();
+        sizeY = world.getHeight();
+        floyd();
+    }
+
     SlavaStrategy(const Trooper& self, const World& world,
             const Game& game): self(self), world(world), game(game) {
 
         move_index += 1;
         if (move_index == 0) {
-            sizeX = world.getWidth();
-            sizeY = world.getHeight();
-            floyd();
+            init();
         }
 
         cells = world.getCells();
@@ -526,13 +536,7 @@ struct SlavaStrategy {
     }
 };
 
-MyStrategy::MyStrategy() {
-    srand(32498);
-#ifdef SLAVA_DEBUG
-    cerr.setf(ios_base::fixed);
-    cerr.precision(3);
-#endif
-}
+MyStrategy::MyStrategy() {}
 
 void MyStrategy::move(const Trooper& self,
         const World& world, const Game& game, Action& action) {
