@@ -10,12 +10,14 @@ using namespace model;
 using namespace std;
 
 #ifdef SLAVA_DEBUG
-#define log(x) { cerr << x << endl; }
+#include <ctime>
+#define log_(x) { cerr << x << endl; }
+#define log(x) log_("[" << (float) clock() / CLOCKS_PER_SEC << " " \
+        << move_index << " " << self.getId() << "] " << x)
 #else
+#define log_(x)
 #define log(x)
 #endif
-
-#define logId(x) log(move_index << " " << self.getId() << ": " << x)
 
 typedef vector< vector< CellType > > Cells;
 typedef Move Action;
@@ -161,8 +163,7 @@ struct SlavaStrategy {
         }
 
         int action_points = self.getActionPoints();
-
-        logId(self.getType() << " " << self.getStance() << " (" << action_points << ") at " << Point(self));
+        log(self.getType() << " " << self.getStance() << " (" << action_points << ") at " << Point(self));
 
         best_score = -inf;
         cur_action = make_action(END_TURN);
@@ -180,7 +181,7 @@ struct SlavaStrategy {
         state.used_grenade      = false;
 
         maximize_score(0, action_points, state);
-        logId("best_score = " << best_score);
+        log("best_score = " << best_score);
         return best_action;
     }
 
@@ -487,11 +488,16 @@ struct SlavaStrategy {
     }
 };
 
-MyStrategy::MyStrategy() {}
+MyStrategy::MyStrategy() {
+#ifdef SLAVA_DEBUG
+    cerr.setf(ios_base::fixed);
+    cerr.precision(3);
+#endif
+}
 
 void MyStrategy::move(const Trooper& self,
         const World& world, const Game& game, Action& action) {
     SlavaStrategy strategy(self, world, game);
     action = strategy.run();
-    logId("action = " << action.getAction() << " " << action.getX() << " " << action.getY());
+    log("action = " << action.getAction() << " " << action.getX() << " " << action.getY());
 }
