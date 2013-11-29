@@ -95,11 +95,6 @@ Action make_action(ActionType action, const Point& p) {
 
 Point target;
 int move_index = -1;
-vector< vector< vector< vector< int > > > > floyd_dist;
-
-int min_distance(const Point& a, const Point& b) {
-    return floyd_dist[a.x][a.y][b.x][b.y];
-}
 
 struct SlavaStrategy {
 
@@ -118,7 +113,6 @@ struct SlavaStrategy {
         if (move_index == 0) {
             sizeX = world.getWidth();
             sizeY = world.getHeight();
-            floyd();
         }
 
         cells = world.getCells();
@@ -152,8 +146,7 @@ struct SlavaStrategy {
         if (move_index == 0) {
             target = self;
         }
-        while (min_distance(self, target) <= 5 ||
-                min_distance(self, target) == inf) {
+        while (target.distance_to(self) < 5) {
             target = Point(random(sizeX), random(sizeY));
             log("new target: " << target);
         }
@@ -203,8 +196,7 @@ struct SlavaStrategy {
             int mates_dist = 0;
             bool close_to_commander = false;
             for (auto& mate : teammates) {
-                int dist = min_distance(state.pos, mate);
-                mates_dist += dist;
+                mates_dist += ceil(state.pos.distance_to(mate));
                 if (mate.getType() == COMMANDER &&
                         state.pos.distance_to(mate) < game.getCommanderAuraRange()) {
                     close_to_commander = true;
@@ -214,7 +206,7 @@ struct SlavaStrategy {
             int enemies_dist = 0;
             int shooting_enemies = 0;
             for (auto& enemy : enemies) {
-                enemies_dist += min_distance(state.pos, enemy);
+                enemies_dist += ceil(state.pos.distance_to(enemy));
                 if (world.isVisible(enemy.getShootingRange(),
                             enemy.getX(), enemy.getY(), enemy.getStance(),
                             state.pos.x, state.pos.y, state.stance)) {
@@ -222,19 +214,19 @@ struct SlavaStrategy {
                 }
             }
 
-            int target_dist = min_distance(state.pos, target);
+            int target_dist = ceil(state.pos.distance_to(target));
 
             int score = 0;
-            score -= 10   * target_dist;
-            score -= 4    * mates_dist;
-            score -= 1000 * shooting_enemies;
+            score -= 5   * target_dist;
+            score -= 1    * mates_dist;
+         // score -= 1000 * shooting_enemies;
          // score += 12   * enemies_dist;
-            score += 100  * close_to_commander;
-            score += 8    * state.has_medkit;
-            score += 8    * state.has_field_ration;
-            score += 8    * state.has_grenade;
-            score -= 60   * state.mate_damage;
-            score += 45   * state.damage;
+         // score += 100  * close_to_commander;
+            score -= 40   * state.mate_damage;
+            score += 30   * state.damage;
+            score += 5    * state.has_medkit;
+            score += 5    * state.has_field_ration;
+            score += 5    * state.has_grenade;
 
             if (score > best_score) {
                 best_action = cur_action;
@@ -367,43 +359,6 @@ struct SlavaStrategy {
                 maximize_score(action_number, points, new_state);
             }
         }
-    }
-
-    void floyd() {
-        vector< Point > free_points;
-        for (int x = 0; x < sizeX; x += 1) {
-            for (int y = 0; y < sizeY; y += 1) {
-                if (world.getCells()[x][y] == FREE) {
-                    free_points.push_back(Point(x, y));
-                }
-            }
-        }
-
-        floyd_dist.resize(sizeX, vector< vector< vector< int > > >(sizeY,
-                    vector< vector< int > >(sizeX, vector< int >(sizeY, inf))));
-#define at2(t, p, q) (t[p.x][p.y][q.x][q.y])
-        for (auto& p : free_points) {
-            for (auto& n : p.neighs()) {
-                if (world.getCells()[n.x][n.y] != FREE) {
-                    continue;
-                }
-                at2(floyd_dist, p, n) = 1;
-            }
-        }
-        for (auto& k : free_points) {
-            for (auto& i : free_points) {
-                if (at2(floyd_dist, i, k) == inf) {
-                    continue;
-                }
-                for (auto& j : free_points) {
-                    if (at2(floyd_dist, k, j) == inf) {
-                        continue;
-                    }
-                    at2(floyd_dist, i, j) = min(at2(floyd_dist, i, j), at2(floyd_dist, i, k) + at2(floyd_dist, k, j));
-                }
-            }
-        }
-#undef at2
     }
 };
 
