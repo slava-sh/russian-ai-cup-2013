@@ -484,6 +484,8 @@ struct SlavaStrategy {
     }
 
     void floyd() {
+        log("floyd start");
+
         vector< Point > free_points;
         for (int x = 0; x < sizeX; x += 1) {
             for (int y = 0; y < sizeY; y += 1) {
@@ -518,6 +520,8 @@ struct SlavaStrategy {
             }
         }
 #undef at2
+
+        log("floyd end");
     }
 };
 
