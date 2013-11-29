@@ -13,3 +13,4 @@ my $map = $maps[rand @maps];
 
 `cp $conf $out`;
 `echo 'map=$map' >>$out`;
+`echo 'seed='    >>$out`;

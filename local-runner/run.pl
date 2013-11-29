@@ -7,11 +7,20 @@ $\ = "\n";
 
 chdir('local-runner');
 
+my $conf = 'random-map.properties';
+my $out  = 'run-once.properties';
+my @maps = qw{default empty cheeser map01 map02 map03};
+
 my $wins = 0;
+my $pluses = 0;
 my $crashes = 0;
 
 for (my $total = 1;; ++$total) {
-    `./random-map.pl`;
+    my $map = $maps[$total % scalar @maps];
+    `cp $conf $out`;
+    `echo 'map=$map'    >>$out`;
+    `echo 'seed=$total' >>$out`;
+
     `./run-once.pl`;
 
     my ($seed, $place, $points, $verdict);
@@ -32,12 +41,16 @@ for (my $total = 1;; ++$total) {
         $wins += 1;
     }
 
+    if ($place <= 2) {
+        $pluses += 1;
+    }
+
     if ($verdict ne 'OK') {
         $crashes += 1;
         print "seed = $seed crash";
     }
 
-    print "$total: ${\(100 * $wins / $total)}% wins, $crashes crashes";
+    printf "%d: %0.3f%% wins, %0.3f%% pluses\n", $total, 100 * $wins / $total, 100 * $pluses / $total;
 }
 
 `rm result.txt run-once.properties`;
