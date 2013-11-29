@@ -95,6 +95,11 @@ Action make_action(ActionType action, const Point& p) {
 
 Point target;
 int move_index = -1;
+vector< vector< vector< vector< int > > > > floyd_dist;
+
+int min_distance(const Point& a, const Point& b) {
+    return floyd_dist[a.x][a.y][b.x][b.y];
+}
 
 struct SlavaStrategy {
 
@@ -113,6 +118,7 @@ struct SlavaStrategy {
         if (move_index == 0) {
             sizeX = world.getWidth();
             sizeY = world.getHeight();
+            floyd();
         }
 
         cells = world.getCells();
@@ -146,7 +152,8 @@ struct SlavaStrategy {
         if (move_index == 0) {
             target = self;
         }
-        while (target.distance_to(self) < 5) {
+        while (min_distance(self, target) <= 5 ||
+                min_distance(self, target) == inf) {
             target = Point(random(sizeX), random(sizeY));
             log("new target: " << target);
         }
@@ -196,7 +203,7 @@ struct SlavaStrategy {
             int mates_dist = 0;
             bool close_to_commander = false;
             for (auto& mate : teammates) {
-                mates_dist += ceil(state.pos.distance_to(mate));
+                mates_dist += min_distance(state.pos, mate);
                 if (mate.getType() == COMMANDER &&
                         state.pos.distance_to(mate) < game.getCommanderAuraRange()) {
                     close_to_commander = true;
@@ -206,7 +213,7 @@ struct SlavaStrategy {
             int enemies_dist = 0;
             int shooting_enemies = 0;
             for (auto& enemy : enemies) {
-                enemies_dist += ceil(state.pos.distance_to(enemy));
+                enemies_dist += min_distance(state.pos, enemy);
                 if (world.isVisible(enemy.getShootingRange(),
                             enemy.getX(), enemy.getY(), enemy.getStance(),
                             state.pos.x, state.pos.y, state.stance)) {
@@ -214,7 +221,7 @@ struct SlavaStrategy {
                 }
             }
 
-            int target_dist = ceil(state.pos.distance_to(target));
+            int target_dist = min_distance(state.pos, target);
 
             int score = 0;
             score -= 5   * target_dist;
@@ -359,6 +366,43 @@ struct SlavaStrategy {
                 maximize_score(action_number, points, new_state);
             }
         }
+    }
+
+    void floyd() {
+        vector< Point > free_points;
+        for (int x = 0; x < sizeX; x += 1) {
+            for (int y = 0; y < sizeY; y += 1) {
+                if (world.getCells()[x][y] == FREE) {
+                    free_points.push_back(Point(x, y));
+                }
+            }
+        }
+
+        floyd_dist.resize(sizeX, vector< vector< vector< int > > >(sizeY,
+                    vector< vector< int > >(sizeX, vector< int >(sizeY, inf))));
+#define at2(t, p, q) (t[p.x][p.y][q.x][q.y])
+        for (auto& p : free_points) {
+            for (auto& n : p.neighs()) {
+                if (world.getCells()[n.x][n.y] != FREE) {
+                    continue;
+                }
+                at2(floyd_dist, p, n) = 1;
+            }
+        }
+        for (auto& k : free_points) {
+            for (auto& i : free_points) {
+                if (at2(floyd_dist, i, k) == inf) {
+                    continue;
+                }
+                for (auto& j : free_points) {
+                    if (at2(floyd_dist, k, j) == inf) {
+                        continue;
+                    }
+                    at2(floyd_dist, i, j) = min(at2(floyd_dist, i, j), at2(floyd_dist, i, k) + at2(floyd_dist, k, j));
+                }
+            }
+        }
+#undef at2
     }
 };
 
