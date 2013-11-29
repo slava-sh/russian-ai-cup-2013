@@ -269,13 +269,13 @@ struct SlavaStrategy {
             score -= 40   * state.mate_damage;
             score += 30   * state.damage;
             score += 2000 * state.kills;
-            score -= 1000 * shooting_enemies;
+            score -= 100  * shooting_enemies * self.getHitpoints();
             score -= 2    * mates_dist;
             score += 40   * state.has_medkit;
             score += 40   * state.has_field_ration;
             score += 40   * state.has_grenade;
             if (state.mate_damage >= 0 && state.damage == 0) {
-                score -= 5 * target_dist;
+                score -= 6 * target_dist;
             }
             if (self.getType() != SCOUT) {
                 score += 50 * close_to_commander;
