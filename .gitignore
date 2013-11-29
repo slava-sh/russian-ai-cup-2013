@@ -1,3 +1,6 @@
+MyStrategy
 compilation.log
 game.log
-MyStrategy
+result.txt
+local-runner/result.txt
+local-runner/run-once.properties
