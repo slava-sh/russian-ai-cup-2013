@@ -140,6 +140,7 @@ struct SlavaStrategy {
     struct State {
         int mate_damage;
         int damage;
+        int kills;
         Point pos;
         TrooperStance stance;   // TODO: use stance
         bool has_medkit;
@@ -169,6 +170,7 @@ struct SlavaStrategy {
         State state;
         state.mate_damage       = 0;
         state.damage            = 0;
+        state.kills             = 0;
         state.pos               = self;
         state.stance            = self.getStance();
         state.has_medkit        = self.isHoldingMedikit();
@@ -228,6 +230,7 @@ struct SlavaStrategy {
             int score = 0;
             score -= 40   * state.mate_damage;
             score += 30   * state.damage;
+            score += 3000 * state.kills;
             score -= 2    * mates_dist;
             score -= 1000 * shooting_enemies;
             score += 40   * state.has_medkit;
@@ -354,7 +357,11 @@ struct SlavaStrategy {
                                 state.pos.x, state.pos.y, state.stance,
                                 enemy.getX(), enemy.getY(), enemy.getStance())) {
                         State new_state = state;
-                        new_state.damage += self.getDamage(state.stance);
+                        int damage = self.getDamage(state.stance);
+                        new_state.damage += damage;
+                        if (damage >= enemy.getHitpoints()) {
+                            new_state.kills += 1;
+                        }
                         if (action_number == 1) {
                             cur_action = make_action(SHOOT, enemy);
                         }
@@ -391,15 +398,29 @@ struct SlavaStrategy {
                     Point e(enemy);
                     if (state.pos.distance_to(e) <= game.getGrenadeThrowRange()) {
                         State new_state = state;
-                        new_state.damage += game.getGrenadeDirectDamage();
+                        {
+                            int damage = game.getGrenadeDirectDamage();
+                            new_state.damage += game.getGrenadeDirectDamage();
+                            if (damage >= enemy.getHitpoints()) {
+                                new_state.kills += 1;
+                            }
+                        }
                         for (auto& n : enemies) {
                             if (e.has_neigh(n)) {
-                                new_state.damage += game.getGrenadeCollateralDamage();
+                                int damage = game.getGrenadeCollateralDamage();
+                                new_state.damage += damage;
+                                if (damage >= n.getHitpoints()) {
+                                    new_state.kills += 1;
+                                }
                             }
                         }
                         for (auto& n : teammates) {
                             if (e.has_neigh(n)) {
-                                new_state.mate_damage += game.getGrenadeCollateralDamage();
+                                int damage = game.getGrenadeCollateralDamage();
+                                new_state.mate_damage += damage;
+                                if (damage >= n.getHitpoints()) {
+                                    new_state.kills -= 2;
+                                }
                             }
                         }
                         new_state.has_grenade = false;
