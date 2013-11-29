@@ -210,10 +210,8 @@ struct SlavaStrategy {
                 }
             }
 
-            int enemies_dist = 0;
             int shooting_enemies = 0;
             for (auto& enemy : enemies) {
-                enemies_dist += min_distance(state.pos, enemy);
                 if (world.isVisible(enemy.getShootingRange(),
                             enemy.getX(), enemy.getY(), enemy.getStance(),
                             state.pos.x, state.pos.y, state.stance)) {
@@ -224,16 +222,17 @@ struct SlavaStrategy {
             int target_dist = min_distance(state.pos, target);
 
             int score = 0;
-            score -= 5   * target_dist;
-            score -= 1    * mates_dist;
-         // score -= 1000 * shooting_enemies;
-         // score += 12   * enemies_dist;
-         // score += 100  * close_to_commander;
             score -= 40   * state.mate_damage;
             score += 30   * state.damage;
-            score += 5    * state.has_medkit;
-            score += 5    * state.has_field_ration;
-            score += 5    * state.has_grenade;
+            if (state.mate_damage >= 0 && state.damage == 0) {
+                score -= 5 * target_dist;
+            }
+            score -= 2    * mates_dist;
+            score -= 1000 * shooting_enemies;
+            score += 50   * close_to_commander;
+            score += 40   * state.has_medkit;
+            score += 40   * state.has_field_ration;
+            score += 40   * state.has_grenade;
 
             if (score > best_score) {
                 best_action = cur_action;
@@ -241,7 +240,7 @@ struct SlavaStrategy {
             }
         }
 
-        if (action_number == 9) {
+        if (action_number == 7) {
             return;
         }
 
