@@ -149,6 +149,7 @@ struct SlavaStrategy {
     Cells cells;
     vector< Trooper > teammates;
     vector< Trooper > enemies;
+    vector< TrooperStance > stances;
 
     void init() {
 #ifdef SLAVA_DEBUG
@@ -159,6 +160,11 @@ struct SlavaStrategy {
 
         sizeX = world.getWidth();
         sizeY = world.getHeight();
+
+        stances.push_back(PRONE);
+        stances.push_back(KNEELING);
+        stances.push_back(STANDING);
+
         floyd();
     }
 
@@ -264,13 +270,17 @@ struct SlavaStrategy {
                 }
             }
 
-            int shooting_enemies = 0;
+            int potential_damage = 0;
             for (auto& enemy : enemies) {
-                if (world.isVisible(enemy.getShootingRange(),
-                            enemy.getX(), enemy.getY(), STANDING,
-                            state.pos.x, state.pos.y, state.stance)) {
-                    shooting_enemies += 1;
+                int damage = 0;
+                for (auto& stance : stances) {
+                    if (world.isVisible(enemy.getShootingRange(),
+                                enemy.getX(), enemy.getY(), stance,
+                                state.pos.x, state.pos.y, state.stance)) {
+                        damage = max(damage, enemy.getDamage(stance));
+                    }
                 }
+                potential_damage += damage;
             }
 
             int target_dist = min_distance(state.pos, target);
@@ -279,7 +289,7 @@ struct SlavaStrategy {
             score -= 40   * state.mate_damage;
             score += 30   * state.damage;
             score += 2000 * state.kills;
-            score -= 1000 * shooting_enemies;
+            score -= 23   * potential_damage;
             score -= 5    * mates_dist / teammates.size();
             score += 40   * state.has_medkit;
             score += 40   * state.has_field_ration;
