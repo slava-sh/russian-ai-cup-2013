@@ -281,6 +281,9 @@ struct SlavaStrategy {
                     }
                 }
                 potential_damage += damage;
+                if (state.pos.distance_to(enemy) <= game.getGrenadeThrowRange()) {
+                    potential_damage += game.getGrenadeDirectDamage();
+                }
             }
 
             int target_dist = min_distance(state.pos, target);
@@ -289,8 +292,8 @@ struct SlavaStrategy {
             score -= 40   * state.mate_damage;
             score += 30   * state.damage;
             score += 2000 * state.kills;
-            score -= 23   * potential_damage;
-            score -= 5    * mates_dist / teammates.size();
+            score -= 40   * potential_damage;
+            score -= 2    * mates_dist;
             score += 40   * state.has_medkit;
             score += 40   * state.has_field_ration;
             score += 40   * state.has_grenade;
