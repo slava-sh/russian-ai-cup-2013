@@ -271,18 +271,25 @@ struct SlavaStrategy {
             }
 
             int potential_damage = 0;
+            int shooting_enemies = 0;
             for (auto& enemy : enemies) {
                 int damage = 0;
+                bool is_shooting = false;
                 for (auto& stance : stances) {
                     if (world.isVisible(enemy.getShootingRange(),
                                 enemy.getX(), enemy.getY(), stance,
                                 state.pos.x, state.pos.y, state.stance)) {
+                        is_shooting = true;
                         damage = max(damage, enemy.getDamage(stance));
                     }
                 }
                 potential_damage += damage;
                 if (state.pos.distance_to(enemy) <= game.getGrenadeThrowRange()) {
+                    is_shooting = true;
                     potential_damage += game.getGrenadeDirectDamage();
+                }
+                if (is_shooting) {
+                    shooting_enemies += 1;
                 }
             }
 
@@ -292,7 +299,7 @@ struct SlavaStrategy {
             score -= 40   * state.mate_damage;
             score += 30   * state.damage;
             score += 2000 * state.kills;
-            score -= 40   * potential_damage;
+            score -= 13   * potential_damage;
             score -= 2    * mates_dist;
             score += 40   * state.has_medkit;
             score += 40   * state.has_field_ration;
@@ -307,6 +314,24 @@ struct SlavaStrategy {
             if (score > best_score) {
                 best_action = cur_action;
                 best_score = score;
+
+                log("score factors ------------");
+                log("mates damage " << -40   * state.mate_damage);
+                log("enemy damage " << +30   * state.damage);
+                log("kiills       " << +2000 * state.kills);
+                log("pot. damage  " << -13   * potential_damage);
+                log("_old_ se     " << -1000 * shooting_enemies);
+                log("mates dist   " << -2    * mates_dist);
+                log("has medkit   " << +40   * state.has_medkit);
+                log("has ration   " << +40   * state.has_field_ration);
+                log("has grenade  " << +40   * state.has_grenade);
+                if (state.mate_damage >= 0 && state.damage == 0) {
+                    log("target dist  " << 5 * target_dist);
+                }
+                if (self.getType() != SCOUT) {
+                    log("close to c   " << 50 * close_to_commander);
+                }
+                log("--------------------------");
             }
         }
 
