@@ -270,7 +270,6 @@ struct SlavaStrategy {
                 }
             }
 
-            int potential_damage = 0;
             int shooting_enemies = 0;
             for (auto& enemy : enemies) {
                 int damage = 0;
@@ -283,10 +282,8 @@ struct SlavaStrategy {
                         damage = max(damage, enemy.getDamage(stance));
                     }
                 }
-                potential_damage += damage;
                 if (state.pos.distance_to(enemy) <= game.getGrenadeThrowRange()) {
                     is_shooting = true;
-                    potential_damage += game.getGrenadeDirectDamage();
                 }
                 if (is_shooting) {
                     shooting_enemies += 1;
@@ -324,7 +321,6 @@ struct SlavaStrategy {
                 log("mates damage " << -400   * state.mate_damage);
                 log("enemy damage " << +300   * state.damage);
                 log("kiills       " << +20000 * state.kills);
-                log("pot. damage  " << -103   * potential_damage);
                 log("_old_ se     " << -10000 * shooting_enemies);
                 log("mates dist   " << -20    * mates_dist);
                 log("has medkit   " << +400   * state.has_medkit);
