@@ -272,18 +272,18 @@ struct SlavaStrategy {
 
             int shooting_enemies = 0;
             for (auto& enemy : enemies) {
-                int damage = 0;
                 bool is_shooting = false;
-                for (auto& stance : stances) {
-                    if (world.isVisible(enemy.getShootingRange(),
-                                enemy.getX(), enemy.getY(), stance,
-                                state.pos.x, state.pos.y, state.stance)) {
-                        is_shooting = true;
-                        damage = max(damage, enemy.getDamage(stance));
-                    }
-                }
                 if (state.pos.distance_to(enemy) <= game.getGrenadeThrowRange()) {
                     is_shooting = true;
+                }
+                else {
+                    for (auto& stance : stances) {
+                        if (world.isVisible(enemy.getShootingRange(),
+                                    enemy.getX(), enemy.getY(), stance,
+                                    state.pos.x, state.pos.y, state.stance)) {
+                            is_shooting = true;
+                        }
+                    }
                 }
                 if (is_shooting) {
                     shooting_enemies += 1;
@@ -296,16 +296,11 @@ struct SlavaStrategy {
             score -= 400   * state.mate_damage;
             score += 300   * state.damage;
             score += 20000 * state.kills;
-            score -= 1000  * shooting_enemies;
+            score -= 10000 * shooting_enemies;
             score += 400   * state.has_medkit;
             score += 400   * state.has_field_ration;
             score += 400   * state.has_grenade;
-            if (self.getType() == FIELD_MEDIC) {
-                score -= 40 * mates_dist;
-            }
-            else {
-                score -= 20 * mates_dist;
-            }
+            score -= 20    * mates_dist;
             if (state.mate_damage >= 0 && state.damage == 0) {
                 score -= 55 * target_dist;
             }
@@ -316,23 +311,6 @@ struct SlavaStrategy {
             if (score > best_score) {
                 best_action = cur_action;
                 best_score = score;
-
-                log("score factors ------------");
-                log("mates damage " << -400   * state.mate_damage);
-                log("enemy damage " << +300   * state.damage);
-                log("kiills       " << +20000 * state.kills);
-                log("_old_ se     " << -10000 * shooting_enemies);
-                log("mates dist   " << -20    * mates_dist);
-                log("has medkit   " << +400   * state.has_medkit);
-                log("has ration   " << +400   * state.has_field_ration);
-                log("has grenade  " << +400   * state.has_grenade);
-                if (state.mate_damage >= 0 && state.damage == 0) {
-                    log("target dist  " << 55 * target_dist);
-                }
-                if (self.getType() != SCOUT) {
-                    log("close to c   " << 500 * close_to_commander);
-                }
-                log("--------------------------");
             }
         }
 
