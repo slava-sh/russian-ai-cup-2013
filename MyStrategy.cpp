@@ -270,8 +270,14 @@ struct SlavaStrategy {
                 }
             }
 
+            int seeing_enemies = 0;
             int shooting_enemies = 0;
             for (auto& enemy : enemies) {
+                if (world.isVisible(enemy.getVisionRange(),
+                            enemy.getX(), enemy.getY(), enemy.getStance(),
+                            state.pos.x, state.pos.y, state.stance)) {
+                    seeing_enemies += 1;
+                }
                 bool is_shooting = false;
                 if (state.pos.distance_to(enemy) <= game.getGrenadeThrowRange()) {
                     is_shooting = true;
@@ -297,6 +303,7 @@ struct SlavaStrategy {
             score += 300   * state.damage;
             score += 20000 * state.kills;
             score -= 10000 * shooting_enemies;
+            score -= 2000  * seeing_enemies;
             score += 400   * state.has_medkit;
             score += 400   * state.has_field_ration;
             score += 400   * state.has_grenade;
