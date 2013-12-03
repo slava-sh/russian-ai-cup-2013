@@ -1,5 +1,5 @@
 MyStrategy
-compilation.log
+*.o
 game.log
 result.txt
 local-runner/result.txt
