@@ -270,14 +270,8 @@ struct SlavaStrategy {
                 }
             }
 
-            int seeing_enemies = 0;
             int shooting_enemies = 0;
             for (auto& enemy : enemies) {
-                if (world.isVisible(enemy.getVisionRange(),
-                            enemy.getX(), enemy.getY(), enemy.getStance(),
-                            state.pos.x, state.pos.y, state.stance)) {
-                    seeing_enemies += 1;
-                }
                 bool is_shooting = false;
                 if (state.pos.distance_to(enemy) <= game.getGrenadeThrowRange()) {
                     is_shooting = true;
@@ -303,7 +297,6 @@ struct SlavaStrategy {
             score += 300   * state.damage;
             score += 20000 * state.kills;
             score -= 10000 * shooting_enemies;
-            score -= 500   * seeing_enemies;
             score += 400   * state.has_medkit;
             score += 400   * state.has_field_ration;
             score += 400   * state.has_grenade;
@@ -466,26 +459,6 @@ struct SlavaStrategy {
         }
 
         {
-            int cost =
-                state.stance == STANDING ? game.getStandingMoveCost() :
-                (state.stance == KNEELING ? game.getKneelingMoveCost() :
-                 game.getProneMoveCost());
-            int points = action_points - cost;
-            if (points >= 0) {
-                for (auto& n : state.pos.neighs()) {
-                    if (cells[n.x][n.y] == FREE) {
-                        State new_state = state;
-                        new_state.pos = n;
-                        if (action_number == 1) {
-                            cur_action = make_action(MOVE, n);
-                        }
-                        maximize_score(action_number, points, new_state);
-                    }
-                }
-            }
-        }
-
-        {
             int points = action_points - game.getStanceChangeCost();
             if (points >= 0) {
                 if (state.stance != STANDING) {
@@ -503,6 +476,26 @@ struct SlavaStrategy {
                         cur_action = make_action(LOWER_STANCE);
                     }
                     maximize_score(action_number, points, new_state);
+                }
+            }
+        }
+
+        {
+            int cost =
+                state.stance == STANDING ? game.getStandingMoveCost() :
+                (state.stance == KNEELING ? game.getKneelingMoveCost() :
+                 game.getProneMoveCost());
+            int points = action_points - cost;
+            if (points >= 0) {
+                for (auto& n : state.pos.neighs()) {
+                    if (cells[n.x][n.y] == FREE) {
+                        State new_state = state;
+                        new_state.pos = n;
+                        if (action_number == 1) {
+                            cur_action = make_action(MOVE, n);
+                        }
+                        maximize_score(action_number, points, new_state);
+                    }
                 }
             }
         }
