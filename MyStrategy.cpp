@@ -303,7 +303,7 @@ struct SlavaStrategy {
             score += 300   * state.damage;
             score += 20000 * state.kills;
             score -= 10000 * shooting_enemies;
-            score -= 2000  * seeing_enemies;
+            score -= 500   * seeing_enemies;
             score += 400   * state.has_medkit;
             score += 400   * state.has_field_ration;
             score += 400   * state.has_grenade;
