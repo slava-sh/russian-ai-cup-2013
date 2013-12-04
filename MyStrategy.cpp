@@ -314,7 +314,7 @@ struct SlavaStrategy {
             }
         }
 
-        if (action_number == 8) {
+        if (action_number == 11) {
             return;
         }
 
@@ -459,6 +459,26 @@ struct SlavaStrategy {
         }
 
         {
+            int cost =
+                state.stance == STANDING ? game.getStandingMoveCost() :
+                (state.stance == KNEELING ? game.getKneelingMoveCost() :
+                 game.getProneMoveCost());
+            int points = action_points - cost;
+            if (points >= 0) {
+                for (auto& n : state.pos.neighs()) {
+                    if (cells[n.x][n.y] == FREE) {
+                        State new_state = state;
+                        new_state.pos = n;
+                        if (action_number == 1) {
+                            cur_action = make_action(MOVE, n);
+                        }
+                        maximize_score(action_number, points, new_state);
+                    }
+                }
+            }
+        }
+
+        {
             int points = action_points - game.getStanceChangeCost();
             if (points >= 0) {
                 if (state.stance != STANDING) {
@@ -476,26 +496,6 @@ struct SlavaStrategy {
                         cur_action = make_action(LOWER_STANCE);
                     }
                     maximize_score(action_number, points, new_state);
-                }
-            }
-        }
-
-        {
-            int cost =
-                state.stance == STANDING ? game.getStandingMoveCost() :
-                (state.stance == KNEELING ? game.getKneelingMoveCost() :
-                 game.getProneMoveCost());
-            int points = action_points - cost;
-            if (points >= 0) {
-                for (auto& n : state.pos.neighs()) {
-                    if (cells[n.x][n.y] == FREE) {
-                        State new_state = state;
-                        new_state.pos = n;
-                        if (action_number == 1) {
-                            cur_action = make_action(MOVE, n);
-                        }
-                        maximize_score(action_number, points, new_state);
-                    }
                 }
             }
         }
