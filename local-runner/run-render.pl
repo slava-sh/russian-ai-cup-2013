@@ -12,7 +12,7 @@ my $out  = 'run-once.properties';
 
 `cp $conf $out`;
 
-`./run-once.pl`;
+`./run-once.pl 2>&1 | tee ../game.log >&2`;
 
 my ($seed, $place, $points, $verdict);
 open my $result, '<', 'result.txt';

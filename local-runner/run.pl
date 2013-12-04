@@ -21,7 +21,7 @@ for (my $total = 1;; ++$total) {
     `echo 'map=$map'    >>$out`;
     `echo 'seed=$total' >>$out`;
 
-    `./run-once.pl`;
+    `./run-once.pl 2>../game.log`;
 
     my ($seed, $place, $points, $verdict);
     open my $result, '<', 'result.txt';

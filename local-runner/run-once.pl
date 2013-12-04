@@ -14,7 +14,7 @@ else {
     my $strategy;
     unless ($strategy = fork) {
         for (;;) {
-            `../MyStrategy 2>../game.log`;
+            `../MyStrategy`;
             my $code = $? >> 8;
             if ($code != 17) {
                 last;
