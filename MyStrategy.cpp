@@ -293,7 +293,7 @@ struct SlavaStrategy {
             int target_dist = min_distance(state.pos, target);
 
             int score = 0;
-            score -= 400   * state.mate_damage;
+            score -= 2000  * state.mate_damage;
             score += 300   * state.damage;
             score += 20000 * state.kills;
             score -= 10000 * shooting_enemies;
